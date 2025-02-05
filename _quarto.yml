@@ -1,5 +1,15 @@
 project:
   type: website
+  pre-render: 
+    - pysym2md --output_file apilist.txt ghapi
+  post-render: 
+    - llms_txt2ctx llms.txt --optional true --save_nbdev_fname llms-ctx-full.txt
+    - llms_txt2ctx llms.txt --save_nbdev_fname llms-ctx.txt
+  resources: 
+    - "*.txt"
+  preview:
+    navigate: false
+    port: 3000
 
 format:
   html:
@@ -16,6 +26,9 @@ website:
   navbar:
     background: primary
     search: true
+    right:
+      - icon: github
+        href: "https://github.com/answerDotAI/ghapi"
   sidebar:
     style: floating
 
