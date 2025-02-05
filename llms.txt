@@ -10,7 +10,7 @@
 - Manage your deployments
 - …and much, much more.
 
-There is a one-to-one mapping between the GitHub REST API and the `ghapi` API, which you can find in the [FullAPI Reference](https://ghapi.fast.ai/fullapi.html.md).
+There is a one-to-one mapping between the GitHub REST API and the `ghapi` API, which you can find in the FullAPI Reference.
 
 ## Tutorials
 
