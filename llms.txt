@@ -3,11 +3,11 @@
 
 `ghapi` provides 100% always-updated coverage of the entire GitHub API. This is done dynamically by converting the OpenAPI spec to a Pythonic API. Using `ghapi`, you can automate nearly anything that you can do through the GitHub web interface or through the `git` client, such as:
 
-- Open, list, comment on, or modify [issues](https://docs.github.com/en/rest/issues) or [pull requests](https://docs.github.com/en/rest/pulls)
-- Create, list, or modify [git tags](https://docs.github.com/en/rest/git/tags) or [GitHub releases](https://docs.github.com/en/rest/releases), including uploading release assets
-- Configure and run GitHub [Actions](https://docs.github.com/en/rest/actions) and [webhooks](https://docs.github.com/en/rest/webhooks)
-- Set up GitHub [users](https://docs.github.com/en/rest/users) and [organizations](https://docs.github.com/en/rest/orgs)
-- Manage your [deployments](https://docs.github.com/en/rest/guides/delivering-deployments)
+- Open, list, comment on, or modify issues or pull requests
+- Create, list, or modify git tags or GitHub releases, including uploading release assets
+- Configure and run GitHub Actions and webhooks
+- Set up GitHub users and organizations
+- Manage your deployments
 - …and much, much more.
 
 There is a one-to-one mapping between the GitHub REST API and the `ghapi` API, which you can find in the [FullAPI Reference](https://ghapi.fast.ai/fullapi.html.md).
