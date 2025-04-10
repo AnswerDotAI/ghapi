@@ -5,19 +5,19 @@
 # %% auto #0
 __all__ = ['paged', 'parse_link_hdr', 'pages']
 
-# %% ../03_page.ipynb #a305a71c
+# %% ../03_page.ipynb #6a0bf465
 from fastcore.all import *
 from .core import *
 
 import re
 from urllib.parse import parse_qs,urlsplit
 
-# %% ../03_page.ipynb #8ed683c4
+# %% ../03_page.ipynb #cea42302
 def paged(oper, *args, per_page=30, max_pages=9999, **kwargs):
     "Convert operation `oper(*args,**kwargs)` into an iterator"
     yield from itertools.takewhile(noop, (oper(*args, per_page=per_page, page=i, **kwargs) for i in range(1,max_pages+1)))
 
-# %% ../03_page.ipynb #b5353c32
+# %% ../03_page.ipynb #56bd053b
 class _Scanner:
     def __init__(self, buf): self.buf,self.match = buf,None
     def __getitem__(self, key): return self.match.group(key)
@@ -31,7 +31,7 @@ _TOKEN         = r'([^()<>@,;:\"\[\]?={}\s]+)'
 _RE_COMMA_HREF = r' *,? *< *([^>]*) *> *'
 _RE_ATTR       = rf'{_TOKEN} *(?:= *({_TOKEN}|{_QUOTED}))? *'
 
-# %% ../03_page.ipynb #fa57cd86
+# %% ../03_page.ipynb #c8de1f90
 def _parse_link_hdr(header):
     "Parse an RFC 5988 link header, returning a `list` of `tuple`s of URL and attr `dict`"
     scanner,links = _Scanner(header),[]
@@ -47,12 +47,12 @@ def _parse_link_hdr(header):
     if scanner.buf: raise Exception(f"parse() failed at {scanner.buf!r}")
     return links
 
-# %% ../03_page.ipynb #02f757cb
+# %% ../03_page.ipynb #5af9f0d7
 def parse_link_hdr(header):
     "Parse an RFC 5988 link header, returning a `dict` from rels to a `tuple` of URL and attrs `dict`"
     return {a.pop('rel'):(u,a) for u,a in _parse_link_hdr(header)}
 
-# %% ../03_page.ipynb #524b8c17
+# %% ../03_page.ipynb #581beb00
 @patch
 def last_page(self:GhApi):
     "Parse RFC 5988 link header from most recent operation, and extract the last page"
@@ -61,11 +61,11 @@ def last_page(self:GhApi):
     qs = parse_qs(urlsplit(last).query)
     return int(nested_idx(qs,'page',0) or 0)
 
-# %% ../03_page.ipynb #caa0b86f
+# %% ../03_page.ipynb #f34f91bd
 def _call_page(i, oper, args, kwargs, per_page):
     return oper(*args, per_page=per_page, page=i, **kwargs)
 
-# %% ../03_page.ipynb #4b571af9
+# %% ../03_page.ipynb #75052160
 def pages(oper, n_pages, *args, n_workers=None, per_page=100, **kwargs):
     "Get `n_pages` pages from `oper(*args,**kwargs)`"
     return parallel(_call_page, range(1,n_pages+1), oper=oper, per_page=per_page, args=args, kwargs=kwargs,

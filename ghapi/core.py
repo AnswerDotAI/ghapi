@@ -5,7 +5,7 @@
 # %% auto #0
 __all__ = ['GH_HOST', 'img_md_pat', 'EMPTY_TREE_SHA', 'print_summary', 'GhApi', 'date2gh', 'gh2date']
 
-# %% ../00_core.ipynb #b348803b
+# %% ../00_core.ipynb #5b5cba7b
 from fastcore.all import *
 from .metadata import funcs
 
@@ -17,13 +17,13 @@ from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from pprint import pprint
 from time import sleep
-import os, shutil, tempfile, subprocess
+import os, shutil, tempfile, subprocess, fnmatch
 
-# %% ../00_core.ipynb #a554c9a9
+# %% ../00_core.ipynb #8d2b1a54
 GH_HOST = os.getenv('GH_HOST', "https://api.github.com")
 _DOC_URL = 'https://docs.github.com/'
 
-# %% ../00_core.ipynb #5e259541
+# %% ../00_core.ipynb #ba730c65
 def _preview_hdr(preview): return {'Accept': f'application/vnd.github.{preview}-preview+json'} if preview else {}
 
 def _mk_param(nm, **kwargs): return Parameter(nm, kind=Parameter.POSITIONAL_OR_KEYWORD, **kwargs)
@@ -50,7 +50,7 @@ def _decode_response(path: str) -> bool:
 
 class _GhObj: pass
 
-# %% ../00_core.ipynb #bdaa0c16
+# %% ../00_core.ipynb #d4a51c1a
 class _GhVerb(_GhObj):
     __slots__ = 'path,verb,tag,name,summary,url,route_ps,params,data,preview,client,decode,__doc__'.split(',')
     def __init__(self, path, verb, oper, summary, url, params, data, preview, client, kwargs):
@@ -85,7 +85,7 @@ class _GhVerb(_GhObj):
         return f'[{self.tag}.{self.name}]({self.doc_url})({params}): *{self.summary}*'
     __repr__ = _repr_markdown_
 
-# %% ../00_core.ipynb #a982aba6
+# %% ../00_core.ipynb #dd7e6b61
 class _GhVerbGroup(_GhObj):
     def __init__(self, name, verbs):
         self.name,self.verbs = name,verbs
@@ -93,15 +93,15 @@ class _GhVerbGroup(_GhObj):
     def __str__(self): return "\n".join(str(v) for v in self.verbs)
     def _repr_markdown_(self): return "\n".join(f'- {v._repr_markdown_()}' for v in self.verbs)
 
-# %% ../00_core.ipynb #93b6462f
+# %% ../00_core.ipynb #531aee7d
 _docroot = 'https://docs.github.com/rest/reference/'
 
-# %% ../00_core.ipynb #9f82bfae
+# %% ../00_core.ipynb #f361159b
 def print_summary(req:Request):
     "Print `Request.summary` with the token (if any) removed"
     pprint(req.summary('Authorization'))
 
-# %% ../00_core.ipynb #fa83108d
+# %% ../00_core.ipynb #83e8a9ce
 class GhApi(_GhObj):
     def __init__(self, owner=None, repo=None, token=None, jwt_token=None, debug=None, limit_cb=None, gh_host=None,
                  authenticate=True, **kwargs):
@@ -152,17 +152,17 @@ class GhApi(_GhObj):
     def full_docs(self):
         return '\n'.join(f'## {gn}\n\n{group._repr_markdown_()}\n' for gn,group in sorted(self.groups.items()))
 
-# %% ../00_core.ipynb #d29c23e5
+# %% ../00_core.ipynb #05cbdf91
 def date2gh(dt:datetime)->str:
     "Convert `dt` (which is assumed to be in UTC time zone) to a format suitable for GitHub API operations"
     return f'{dt.replace(microsecond=0).isoformat()}Z'
 
-# %% ../00_core.ipynb #477abb7e
+# %% ../00_core.ipynb #3f4c8b27
 def gh2date(dtstr:str)->datetime:
     "Convert date string `dtstr` received from a GitHub API operation to a UTC `datetime`"
     return datetime.fromisoformat(dtstr.replace('Z', ''))
 
-# %% ../00_core.ipynb #edf7e114
+# %% ../00_core.ipynb #16068542
 img_md_pat = re.compile(r'!\[(?P<alt>.*?)\]\((?P<url>[^\s]+)\)')
 
 def _run_subp(cmd): 
@@ -187,14 +187,14 @@ def create_gist(self:GhApi, description, content, filename='gist.txt', public=Fa
     content = img_md_pat.sub(lambda m: f"![{m['alt']}]({img_urls.get(m['url'], m['url'])})", content)
     return self.gists.update(gist.id, files={filename:{'content':content}})
 
-# %% ../00_core.ipynb #6c761af7
+# %% ../00_core.ipynb #4b7a278c
 @patch
 def delete_release(self:GhApi, release):
     "Delete a release and its associated tag"
     self.repos.delete_release(release.id)
     self.git.delete_ref(f'tags/{release.tag_name}')
 
-# %% ../00_core.ipynb #334dc8bb
+# %% ../00_core.ipynb #b2bf7e22
 @patch
 def upload_file(self:GhApi, rel, fn):
     "Upload `fn` to endpoint for release `rel`"
@@ -203,7 +203,7 @@ def upload_file(self:GhApi, rel, fn):
     mime = mimetypes.guess_type(fn, False)[0] or 'application/octet-stream'
     return self(url, 'POST', headers={'Content-Type':mime}, query = {'name':fn.name}, data=fn.read_bytes())
 
-# %% ../00_core.ipynb #bfb8aa77
+# %% ../00_core.ipynb #3cad71a4
 @patch
 def create_release(self:GhApi, tag_name, branch='master', name=None, body='',
                    draft=False, prerelease=False, files=None):
@@ -214,23 +214,23 @@ def create_release(self:GhApi, tag_name, branch='master', name=None, body='',
     for file in listify(files): self.upload_file(rel, file)
     return rel
 
-# %% ../00_core.ipynb #79dcc965
+# %% ../00_core.ipynb #2be73ae0
 @patch
 def list_tags(self:GhApi, prefix:str=''):
     "List all tags, optionally filtered to those starting with `prefix`"
     return self.git.list_matching_refs(f'tags/{prefix}')
 
-# %% ../00_core.ipynb #aa90ceca
+# %% ../00_core.ipynb #303eeec6
 @patch
 def list_branches(self:GhApi, prefix:str=''):
     "List all branches, optionally filtered to those starting with `prefix`"
     return self.git.list_matching_refs(f'heads/{prefix}')
 
-# %% ../00_core.ipynb #1ae843b1
+# %% ../00_core.ipynb #eb85edd7
 # See https://stackoverflow.com/questions/9765453
 EMPTY_TREE_SHA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 
-# %% ../00_core.ipynb #ee36e239
+# %% ../00_core.ipynb #ba6ab941
 @patch
 def create_branch_empty(self:GhApi, branch):
     t = self.git.create_tree(base_tree=EMPTY_TREE_SHA, tree = [dict(
@@ -238,38 +238,38 @@ def create_branch_empty(self:GhApi, branch):
     c = self.git.create_commit(f'create {branch}', t.sha)
     return self.git.create_ref(f'refs/heads/{branch}', c.sha)
 
-# %% ../00_core.ipynb #0e8ff05c
+# %% ../00_core.ipynb #68b150fc
 @patch
 def delete_tag(self:GhApi, tag:str):
     "Delete a tag"
     return self.git.delete_ref(f'tags/{tag}')
 
-# %% ../00_core.ipynb #68d697f9
+# %% ../00_core.ipynb #75c168a1
 @patch
 def delete_branch(self:GhApi, branch:str):
     "Delete a branch"
     return self.git.delete_ref(f'heads/{branch}')
 
-# %% ../00_core.ipynb #d9c1e003
+# %% ../00_core.ipynb #96053795
 @patch
 def get_branch(self:GhApi, branch=None):
     branch = branch or self.repos.get().default_branch
     return self.list_branches(branch)[0]
 
-# %% ../00_core.ipynb #abbaf9f1
+# %% ../00_core.ipynb #93b24881
 @patch
 def list_files(self:GhApi, branch=None):
     ref = self.get_branch(branch)
     res = self.git.get_tree(ref.object.sha).tree
     return {o.path:o for o in res}
 
-# %% ../00_core.ipynb #76914452
+# %% ../00_core.ipynb #ffc347b2
 @patch
 def get_content(self:GhApi, path):
     res = self.repos.get_content(path)
     return base64.b64decode(res.content)
 
-# %% ../00_core.ipynb #a323a872
+# %% ../00_core.ipynb #9582ee1f
 @patch
 def create_or_update_file(self:GhApi, path, message, committer, author, content=None, sha=None, branch=''):
     if not branch: branch = api.repos.get()['default_branch']
@@ -279,13 +279,13 @@ def create_or_update_file(self:GhApi, path, message, committer, author, content=
     return self.repos.create_or_update_file_contents(path, message, content=content,
         branch=branch, committer=committer or {}, author=author or {}, **kwargs)
 
-# %% ../00_core.ipynb #43950328
+# %% ../00_core.ipynb #5044445d
 @patch
 def create_file(self:GhApi, path, message, committer, author, content=None, branch=None):
     if not branch: branch = api.repos.get()['default_branch']
     return self.create_or_update_file(path, message, branch=branch, committer=committer, content=content, author=author)
 
-# %% ../00_core.ipynb #a31c90ae
+# %% ../00_core.ipynb #4e74c337
 @patch
 def delete_file(self:GhApi, path, message, committer, author, sha=None, branch=None):
     if not branch: branch = api.repos.get()['default_branch']
@@ -293,14 +293,61 @@ def delete_file(self:GhApi, path, message, committer, author, sha=None, branch=N
     return self.repos.delete_file(path, message=message, sha=sha,
                                   branch=branch, committer=committer, author=author)
 
-# %% ../00_core.ipynb #4b42b350
+# %% ../00_core.ipynb #93f6b559
 @patch
 def update_contents(self:GhApi, path, message, committer, author, content, sha=None, branch=None):
     if not branch: branch = api.repos.get()['default_branch']
     if sha is None: sha = self.list_files()[path].sha
     return self.create_or_update_file(path, message, committer=committer, author=author, content=content, sha=sha, branch=branch)
 
-# %% ../00_core.ipynb #e95416b0
+# %% ../00_core.ipynb #1815bdef
+def _find_matches(path, pats):
+    "Returns matched patterns"
+    matches = []
+    for p in listify(pats):
+        if fnmatch.fnmatch(path,p): matches.append(p)
+    return matches
+
+# %% ../00_core.ipynb #b6bbe221
+def _include(path, include, exclude):
+    "Prioritize non-star matches, if both include and exclude star expr then pick longer."
+    include_matches = ["*"] if include is None else _find_matches(path, include)
+    exclude_matches = [] if exclude is None else _find_matches(path, exclude)
+    if include_matches and exclude_matches:
+        include_star = [m for m in include_matches if "*" in m]
+        exclude_star = [m for m in exclude_matches if "*" in m]
+        if include_star and exclude_star: return len(include_star) > len(exclude_star)
+        if include_star: return False
+        if exclude_star: return True    
+    if include_matches: return True
+    if exclude_matches: return False
+
+# %% ../00_core.ipynb #7016b664
+@patch
+def get_repo_files(self:GhApi, owner, repo, branch="main", inc=None, exc=None):
+    "Get all file items of a repo."
+    tree = self.git.get_tree(owner=owner, repo=repo, tree_sha=branch, recursive=True)
+    res = L()
+    for item in tree['tree']:
+        if item['type'] == 'blob': res.append(item) 
+    return res.filter(lambda o: _include(o.path,inc,exc))
+
+# %% ../00_core.ipynb #860e5ad8
+@patch
+def get_file_content(self:GhApi, path, owner, repo, branch="main"):
+    o = self.repos.get_content(owner, repo, path, ref=branch)
+    o['content_decoded'] = base64.b64decode(o.content).decode('utf-8')
+    return o
+
+# %% ../00_core.ipynb #1255603a
+@patch
+@delegates(GhApi.get_repo_files)
+def get_repo_contents(self:GhApi, owner, repo, **kwargs):
+    repo_files = self.get_repo_files(owner, repo, **kwargs)
+    for s in ('inc','exc',): kwargs.pop(s)
+    return parallel(self.get_file_content, repo_files.attrgot("path"), owner=owner, repo=repo, **kwargs)
+
+# %% ../00_core.ipynb #ac4ab4e0
 @patch
 def enable_pages(self:GhApi, branch=None, path="/"):
     "Enable or update pages for a repo to point to a `branch` and `path`."

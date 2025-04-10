@@ -9,7 +9,7 @@ __all__ = ['contexts', 'env_github', 'Event', 'def_pipinst', 'user_repo', 'creat
            'context_github', 'context_env', 'context_job', 'context_steps', 'context_runner', 'context_secrets',
            'context_strategy', 'context_matrix', 'context_needs']
 
-# %% ../01_actions.ipynb #0f28e91f
+# %% ../01_actions.ipynb #e4187aeb
 from fastcore.all import *
 from .core import *
 from .templates import *
@@ -18,7 +18,7 @@ import textwrap
 from contextlib import contextmanager
 from enum import Enum
 
-# %% ../01_actions.ipynb #f1d8838a
+# %% ../01_actions.ipynb #fb69ba90
 # So we can run this outside of GitHub actions too, read from file if needed
 for a,b in (('CONTEXT_GITHUB',context_example), ('CONTEXT_NEEDS',needs_example), ('GITHUB_REPOSITORY','octocat/Hello-World')):
     if a not in os.environ: os.environ[a] = b
@@ -27,18 +27,18 @@ contexts = 'github', 'env', 'job', 'steps', 'runner', 'secrets', 'strategy', 'ma
 for context in contexts:
     globals()[f'context_{context}'] = dict2obj(loads(os.getenv(f"CONTEXT_{context.upper()}", "{}")))
 
-# %% ../01_actions.ipynb #e842a54d
+# %% ../01_actions.ipynb #393990e1
 _all_ = ['context_github', 'context_env', 'context_job', 'context_steps', 'context_runner', 'context_secrets', 'context_strategy', 'context_matrix', 'context_needs']
 
-# %% ../01_actions.ipynb #1f119280
+# %% ../01_actions.ipynb #02ca0806
 env_github = dict2obj({k[7:].lower():v for k,v in os.environ.items() if k.startswith('GITHUB_')})
 
-# %% ../01_actions.ipynb #83cc44c3
+# %% ../01_actions.ipynb #3170b688
 def user_repo():
     "List of `user,repo` from `env_github.repository"
     return env_github.repository.split('/')
 
-# %% ../01_actions.ipynb #baba5eb9
+# %% ../01_actions.ipynb #deb389d7
 Event = str_enum('Event',
     'page_build','content_reference','repository_import','create','workflow_run','delete','organization','sponsorship',
     'project_column','push','context','milestone','project_card','project','package','pull_request','repository_dispatch',
@@ -48,14 +48,14 @@ Event = str_enum('Event',
     'installation','release','issues','repository','gollum','membership','deployment','deploy_key','issue_comment','ping',
     'deployment_status','fork','schedule')
 
-# %% ../01_actions.ipynb #e42ac247
+# %% ../01_actions.ipynb #bf0b5888
 def _create_file(path:Path, fname:str, contents):
     if contents and not (path/fname).exists(): (path/fname).write_text(contents)
 
 def _replace(s:str, find, repl, i:int=0, suf:str=''):
     return s.replace(find, textwrap.indent(repl, ' '*i)+suf)
 
-# %% ../01_actions.ipynb #db6f1964
+# %% ../01_actions.ipynb #26eb64e5
 def create_workflow_files(fname:str, workflow:str, build_script:str, prebuild:bool=False):
     "Create workflow and script files in suitable places in `github` folder"
     if not os.path.exists('.git'): return print('This does not appear to be the root of a git repo')
@@ -67,7 +67,7 @@ def create_workflow_files(fname:str, workflow:str, build_script:str, prebuild:bo
     _create_file(scr_path, f'build-{fname}.py', build_script)
     if prebuild: _create_file(scr_path, f'prebuild-{fname}.py', build_script)
 
-# %% ../01_actions.ipynb #f8d6bf37
+# %% ../01_actions.ipynb #3cf450a0
 def fill_workflow_templates(name:str, event, run, context, script, opersys='ubuntu', prebuild=False):
     "Function to create a simple Ubuntu workflow that calls a Python `ghapi` script"
     c = wf_tmpl
@@ -78,23 +78,23 @@ def fill_workflow_templates(name:str, event, run, context, script, opersys='ubun
         c = _replace(c, f'${find}', str(repl), i)
     create_workflow_files(name, c, script, prebuild=prebuild)
 
-# %% ../01_actions.ipynb #3bfae412
+# %% ../01_actions.ipynb #bc2f80a5
 def env_contexts(contexts):
     "Create a suitable `env:` line for a workflow to make a context available in the environment"
     contexts = uniqueify(['github'] + listify(contexts))
     return "\n".join("CONTEXT_" + o.upper() + ": ${{ toJson(" + o.lower() + ") }}" for o in contexts)
 
-# %% ../01_actions.ipynb #1068e627
+# %% ../01_actions.ipynb #561125fa
 def_pipinst = 'pip install -Uq ghapi'
 
-# %% ../01_actions.ipynb #dd605316
+# %% ../01_actions.ipynb #39c5d429
 def create_workflow(name:str, event:Event, contexts:list=None, opersys='ubuntu', prebuild=False):
     "Function to create a simple Ubuntu workflow that calls a Python `ghapi` script"
     script = "from fastcore.all import *\nfrom ghapi import *"
     fill_workflow_templates(name, f'{event}:', def_pipinst, env_contexts(contexts),
                             script=script, opersys=opersys, prebuild=prebuild)
 
-# %% ../01_actions.ipynb #b5e64efa
+# %% ../01_actions.ipynb #e8482286
 @call_parse
 def gh_create_workflow(
     name:str,  # Name of the workflow file
@@ -104,40 +104,40 @@ def gh_create_workflow(
     "Supports `gh-create-workflow`, a CLI wrapper for `create_workflow`."
     create_workflow(name, Event[event], contexts.split())
 
-# %% ../01_actions.ipynb #c69fe43a
+# %% ../01_actions.ipynb #a85ea1f8
 _example_url = 'https://raw.githubusercontent.com/fastai/ghapi/master/examples/{}.json'
 
-# %% ../01_actions.ipynb #ad31da47
+# %% ../01_actions.ipynb #47cfc8b9
 def example_payload(event):
     "Get an example of a JSON payload for `event`"
     return dict2obj(urljson(_example_url.format(event)))
 
-# %% ../01_actions.ipynb #9ffb1dce
+# %% ../01_actions.ipynb #778d7cc7
 def github_token():
     "Get GitHub token from `GITHUB_TOKEN` env var if available, or from `github` context"
     return os.getenv('GITHUB_TOKEN', context_github.get('token', None))
 
-# %% ../01_actions.ipynb #20832f3c
+# %% ../01_actions.ipynb #88716812
 def actions_output(name, value):
     "Print the special GitHub Actions `::set-output` line for `name::value`"
     print(f"::set-output name={name}::{value}")
 
-# %% ../01_actions.ipynb #497020d4
+# %% ../01_actions.ipynb #50cad4c2
 def actions_debug(message):
     "Print the special `::debug` line for `message`"
     print(f"::debug::{message}")
 
-# %% ../01_actions.ipynb #3e75ffe1
+# %% ../01_actions.ipynb #5b6d15ab
 def actions_warn(message, details=''):
     "Print the special `::warning` line for `message`"
     print(f"::warning {details}::{message}")
 
-# %% ../01_actions.ipynb #886ede87
+# %% ../01_actions.ipynb #e97ba982
 def actions_error(message, details=''):
     "Print the special `::error` line for `message`"
     print(f"::error {details}::{message}")
 
-# %% ../01_actions.ipynb #da04d233
+# %% ../01_actions.ipynb #a7ff989d
 @contextmanager
 def actions_group(title):
     "Context manager to print the special `::group`/`::endgroup` lines for `title`"
@@ -145,12 +145,12 @@ def actions_group(title):
     yield
     print(f"::endgroup::")
 
-# %% ../01_actions.ipynb #95fb29a7
+# %% ../01_actions.ipynb #3405cb7f
 def actions_mask(value):
     "Print the special `::add-mask` line for `value`"
     print(f"::add-mask::{value}")
 
-# %% ../01_actions.ipynb #a1adceae
+# %% ../01_actions.ipynb #8682ff46
 def set_git_user(api=None):
     "Set git user name/email to authenticated user (if `api`) or GitHub Actions bot (otherwise)"
     if api:
