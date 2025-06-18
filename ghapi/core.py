@@ -127,7 +127,7 @@ class GhApi(_GhObj):
         if not path.startswith(('http://', 'https://')):
             path = self.gh_host + path
         if route:
-            for k,v in route.items(): route[k] = quote(str(route[k]))
+            for k,v in route.items(): route[k] = quote(str(route[k]), safe='')
         return_json = ('json' in headers['Accept']) and (decode is True)
         debug = self.debug if self.debug else print_summary if os.getenv('GHAPI_DEBUG') else None
         res,self.recv_hdrs = urlsend(path, verb, headers=headers or None, decode=decode, debug=debug, return_headers=True,
