@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 1.0.7
+
+### New Features
+
+- Avoid quoting slash, thanks @soemiran ([#196](https://github.com/AnswerDotAI/ghapi/issues/196))
+- Create gist with imgs ([#195](https://github.com/AnswerDotAI/ghapi/pull/195)), thanks to [@KeremTurgutlu](https://github.com/KeremTurgutlu)
+
+
 ## 1.0.6
 
 ### New Features
