@@ -2,6 +2,12 @@
 
 <!-- do not remove -->
 
+## 1.0.8
+
+### Bugs Squashed
+
+- rm `GitPython` dep ([#199](https://github.com/AnswerDotAI/ghapi/pull/199)), thanks to [@KeremTurgutlu](https://github.com/KeremTurgutlu)
+
 
 
 ## 1.0.7
