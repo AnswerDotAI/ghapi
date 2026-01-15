@@ -2,6 +2,16 @@
 
 <!-- do not remove -->
 
+## 1.0.9
+
+### New Features
+
+- Update API ([#203](https://github.com/AnswerDotAI/ghapi/issues/203))
+- Add GraphQL support ([#202](https://github.com/AnswerDotAI/ghapi/pull/202)), thanks to [@erikgaas](https://github.com/erikgaas)
+- Support for Python 3.13 and 3.14 ([#200](https://github.com/AnswerDotAI/ghapi/pull/200)), thanks to [@hugovk](https://github.com/hugovk)
+- Add py.typed file so that typecheckers recognize this library as typed ([#194](https://github.com/AnswerDotAI/ghapi/pull/194)), thanks to [@jedesroches](https://github.com/jedesroches)
+
+
 ## 1.0.8
 
 ### Bugs Squashed
