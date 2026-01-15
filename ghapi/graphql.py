@@ -27,6 +27,7 @@ class GhGql:
                 headers={'Authorization': f'bearer {self.token}'}
             )
             self._client = Client(transport=transport, fetch_schema_from_transport=True)
+            self._client.execute(gql('{ __typename }'))  # Trigger schema fetch
         return self._client
     
     @property
@@ -61,14 +62,14 @@ def list_queries():
     "List all available top-level GraphQL query types"
     return _get_client().list_queries()
 
-def query_args(name):
+def query_args(name:str):
     "Show arguments for a query type"
     return _get_client().query_args(name)
 
-def type_fields(name):
+def type_fields(name:str):
     "List fields on a GraphQL type (use PascalCase, e.g. 'Repository')"
     return _get_client().type_fields(name)
 
-def gh_query(query, variables=None):
+def gh_query(query:str, variables:dict[str,any]=None):
     "Execute a GraphQL query"
     return _get_client()(query, variables)
