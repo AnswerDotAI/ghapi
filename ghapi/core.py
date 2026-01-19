@@ -300,52 +300,43 @@ def update_contents(self:GhApi, path, message, committer, author, content, sha=N
     if sha is None: sha = self.list_files()[path].sha
     return self.create_or_update_file(path, message, committer=committer, author=author, content=content, sha=sha, branch=branch)
 
-# %% ../00_core.ipynb #1815bdef
+# %% ../00_core.ipynb #444784ce
 def _find_matches(path, pats):
     "Returns matched patterns"
-    matches = []
-    for p in listify(pats):
-        if fnmatch.fnmatch(path,p): matches.append(p)
-    return matches
+    return L(pats).filter(lambda p: fnmatch.fnmatch(path, p))
 
-# %% ../00_core.ipynb #b6bbe221
+# %% ../00_core.ipynb #9ffb3b8f
 def _include(path, include, exclude):
-    "Prioritize non-star matches, if both include and exclude star expr then pick longer."
-    include_matches = ["*"] if include is None else _find_matches(path, include)
-    exclude_matches = [] if exclude is None else _find_matches(path, exclude)
-    if include_matches and exclude_matches:
-        include_star = [m for m in include_matches if "*" in m]
-        exclude_star = [m for m in exclude_matches if "*" in m]
-        if include_star and exclude_star: return len(include_star) > len(exclude_star)
-        if include_star: return False
-        if exclude_star: return True    
-    if include_matches: return True
-    if exclude_matches: return False
+    "Returns True if path matches include patterns (if any) and doesn't match any exclude pattern."
+    if include and not any(fnmatch.fnmatch(path, p) for p in listify(include)): return False
+    if exclude and any(fnmatch.fnmatch(path, p) for p in listify(exclude)): return False
+    return True
 
-# %% ../00_core.ipynb #7016b664
+# %% ../00_core.ipynb #802737b1
+@patch
+def _get_repo_files(self:GhApi, owner, repo, branch="main"):
+    return self.git.get_tree(owner=owner, repo=repo, tree_sha=branch, recursive=True)
+
 @patch
 def get_repo_files(self:GhApi, owner, repo, branch="main", inc=None, exc=None):
-    "Get all file items of a repo."
-    tree = self.git.get_tree(owner=owner, repo=repo, tree_sha=branch, recursive=True)
-    res = L()
-    for item in tree['tree']:
-        if item['type'] == 'blob': res.append(item) 
-    return res.filter(lambda o: _include(o.path,inc,exc))
+    "Get all file items of a repo, optionally filtered."
+    tree = self._get_repo_files(owner, repo, branch)
+    return L(tree['tree']).filter(lambda o: o['type'] == 'blob' and _include(o.path, inc, exc))
 
-# %% ../00_core.ipynb #860e5ad8
+# %% ../00_core.ipynb #5ef71bf5
 @patch
 def get_file_content(self:GhApi, path, owner, repo, branch="main"):
     o = self.repos.get_content(owner, repo, path, ref=branch)
     o['content_decoded'] = base64.b64decode(o.content).decode('utf-8')
     return o
 
-# %% ../00_core.ipynb #1255603a
+# %% ../00_core.ipynb #d02d1bab
 @patch
 @delegates(GhApi.get_repo_files)
-def get_repo_contents(self:GhApi, owner, repo, **kwargs):
+def get_repo_contents(self:GhApi, owner, repo, branch='main', **kwargs):
     repo_files = self.get_repo_files(owner, repo, **kwargs)
     for s in ('inc','exc',): kwargs.pop(s)
-    return parallel(self.get_file_content, repo_files.attrgot("path"), owner=owner, repo=repo, **kwargs)
+    return parallel(self.get_file_content, repo_files.attrgot("path"), owner=owner, repo=repo, branch=branch)
 
 # %% ../00_core.ipynb #ac4ab4e0
 @patch
