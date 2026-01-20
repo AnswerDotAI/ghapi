@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.0.10
+
+### New Features
+
+- `GhApi.get_repo_contents` method ([#190](https://github.com/AnswerDotAI/ghapi/pull/190)), thanks to [@KeremTurgutlu](https://github.com/KeremTurgutlu)
+
+
 ## 1.0.9
 
 ### New Features
