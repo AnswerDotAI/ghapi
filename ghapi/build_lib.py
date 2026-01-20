@@ -3,7 +3,7 @@
 # %% auto #0
 __all__ = ['GH_OPENAPI_URL', 'GhMeta', 'build_funcs']
 
-# %% ../90_build_lib.ipynb #73ed725e
+# %% ../90_build_lib.ipynb #cdbcf258
 from fastcore.all import *
 
 import pprint
@@ -11,11 +11,11 @@ import pprint
 from jsonref import loads
 from collections import namedtuple
 
-# %% ../90_build_lib.ipynb #c322ea0b
+# %% ../90_build_lib.ipynb #c215ed8d
 GH_OPENAPI_URL = 'https://github.com/github/rest-api-description/raw/main/descriptions/api.github.com/api.github.com.json?raw=true'
 _DOC_URL = 'https://docs.github.com/'
 
-# %% ../90_build_lib.ipynb #a8fd97f6
+# %% ../90_build_lib.ipynb #ce33036d
 _lu_type = dict(zip(
     'NA string object array boolean number integer'.split(),
     map(PrettyString,'object str dict list bool int int'.split())
@@ -34,7 +34,7 @@ def _find_data(d):
             if 'properties' in o: return o['properties']
     return {}
 
-# %% ../90_build_lib.ipynb #7b211864
+# %% ../90_build_lib.ipynb #cf7204d9
 def build_funcs(nm='ghapi/metadata.py', url=GH_OPENAPI_URL, docurl=_DOC_URL):
     "Build module metadata.py from an Open API spec and optionally filter by a path `pre`"
     def _get_detls(o):
@@ -53,5 +53,5 @@ def build_funcs(nm='ghapi/metadata.py', url=GH_OPENAPI_URL, docurl=_DOC_URL):
               if 'externalDocs' in detls]
     Path(nm).write_text("funcs = " + pprint.pformat(_funcs, width=360))
 
-# %% ../90_build_lib.ipynb #495861d0
+# %% ../90_build_lib.ipynb #9d2307fc
 GhMeta = namedtuple('GhMeta', 'path verb oper_id summary doc_url params data preview'.split())

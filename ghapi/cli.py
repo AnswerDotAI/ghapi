@@ -5,13 +5,13 @@
 # %% auto #0
 __all__ = ['ghapi', 'ghpath', 'ghraw', 'completion_ghapi']
 
-# %% ../10_cli.ipynb #6adcc120
+# %% ../10_cli.ipynb #e10a0628
 from fastcore.all import *
 import ghapi.core as gh,inspect
 from .core import *
 from collections import defaultdict
 
-# %% ../10_cli.ipynb #295d196c
+# %% ../10_cli.ipynb #44ebb54f
 def _parse_args(a):
     "Extract positional and keyword arguments from `a`=`sys.argv`"
     pos,kw = [],{}
@@ -43,34 +43,34 @@ def _call_api(f):
     call = f(pos, api)
     return call if kw.get('help', None) else call(*pos, **kw)
 
-# %% ../10_cli.ipynb #1f1a4f1a
+# %% ../10_cli.ipynb #55f9002f
 def _ghapi(arg, api):
     for part in arg.pop(0).split('.'): api = getattr(api,part)
     return api
 
-# %% ../10_cli.ipynb #1f166d73
+# %% ../10_cli.ipynb #7557c309
 def ghapi():
     "Python backend for the `ghapi` command, which calls an endpoint by operation name"
     res = _call_api(_ghapi)
     if isinstance(res, (gh._GhObj,dict,L)): print(res)
     elif res: print(inspect.signature(res))
 
-# %% ../10_cli.ipynb #aa44c461
+# %% ../10_cli.ipynb #524623ba
 def _ghpath(arg, api): return api[arg.pop(0),arg.pop(0)]
 
-# %% ../10_cli.ipynb #e6465efb
+# %% ../10_cli.ipynb #723624b0
 def ghpath():
     "Python backend for the `ghpath` command, which calls an endpoint by path"
     print(_call_api(_ghpath) or '')
 
-# %% ../10_cli.ipynb #fc26e8f5
+# %% ../10_cli.ipynb #93dbad3e
 def ghraw():
     "Python backend for the `ghraw` command, which calls a fully-specified endpoint"
     cmd,api,pos,kw = _api()
     if not pos: return print(f"Usage: `{cmd}` operation <params>")
     print(api(*pos, **kw))
 
-# %% ../10_cli.ipynb #bf4322ee
+# %% ../10_cli.ipynb #21033494
 _TAB_COMPLETION="""
 _do_ghapi_completions()
 {
@@ -81,7 +81,7 @@ _do_ghapi_completions()
 complete -F _do_ghapi_completions ghapi
 """
 
-# %% ../10_cli.ipynb #007b595b
+# %% ../10_cli.ipynb #9fe362ab
 def completion_ghapi():
     "Python backend for `completion-ghapi` command"
     if len(sys.argv) == 2 and sys.argv[1] == '--install':
