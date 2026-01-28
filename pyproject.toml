@@ -3,19 +3,16 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="ghapi"
+name = "ghapi"
 dynamic = ["version"]
 description = "A python client for the GitHub API"
 readme = "README.md"
-requires-python=">=3.7"
+requires-python = ">=3.7"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@fast.ai"}]
 keywords = ['github', 'api']
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-]
-dependencies = ["fastcore>=1.7.2"]
+classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 5 - Production/Stable", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
+dependencies = ['fastcore>=1.7.2']
 
 [project.urls]
 Repository = "https://github.com/fastai/ghapi"
@@ -24,16 +21,22 @@ Documentation = "https://ghapi.fast.ai/"
 [project.entry-points.nbdev]
 ghapi = "ghapi._modidx:d"
 
+[project.optional-dependencies]
+dev = ['jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt']
+
+
 [project.scripts]
 ghapi = "ghapi.cli:ghapi"
+ghpath = "ghapi.cli:ghpath"
+ghraw = "ghapi.cli:ghraw"
+completion-ghapi = "ghapi.cli:completion_ghapi"
+gh-create-workflow = "ghapi.actions:gh_create_workflow"
+
 [tool.setuptools.dynamic]
 version = {attr = "ghapi.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["ghapi"]
-
-[project.optional-dependencies]
-dev = ["jsonref","matplotlib","nbclassic","nbdev","pysymbol_llm","llms-txt"]
 
 [tool.nbdev]
 nbs_path = '.'
