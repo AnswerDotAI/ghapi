@@ -25,13 +25,9 @@ Documentation = "https://ghapi.fast.ai/"
 ghapi = "ghapi._modidx:d"
 
 [project.scripts]
-ghapi=ghapi.cli:ghapi
-
+ghapi = "ghapi.cli:ghapi"
 [tool.setuptools.dynamic]
 version = {attr = "ghapi.__version__"}
-
-[project.scripts]
-ghapi=ghapi.cli:ghapi
 
 [tool.setuptools.packages.find]
 include = ["ghapi"]
