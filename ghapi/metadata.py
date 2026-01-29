@@ -276,7 +276,7 @@ funcs = [('/', 'get', 'meta/root', 'GitHub API Root', 'rest/meta/meta#github-api
   'Update a GitHub-hosted runner for an organization',
   'rest/actions/hosted-runners#update-a-github-hosted-runner-for-an-organization',
   [],
-  [['name', str], ['runner_group_id', int], ['maximum_runners', int], ['enable_static_ip', bool], ['image_version', str]],
+  [['name', str], ['runner_group_id', int], ['maximum_runners', int], ['enable_static_ip', bool], ['size', str], ['image_id', str], ['image_version', str]],
   ''),
  ('/orgs/{org}/actions/hosted-runners/{hosted_runner_id}', 'delete', 'actions/delete-hosted-runner-for-org', 'Delete a GitHub-hosted runner for an organization', 'rest/actions/hosted-runners#delete-a-github-hosted-runner-for-an-organization', [], [], ''),
  ('/orgs/{org}/actions/oidc/customization/sub', 'get', 'oidc/get-oidc-custom-sub-template-for-org', 'Get the customization template for an OIDC subject claim for an organization', 'rest/actions/oidc#get-the-customization-template-for-an-oidc-subject-claim-for-an-organization', [], [], ''),
