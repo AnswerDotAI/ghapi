@@ -22,7 +22,7 @@ Documentation = "https://ghapi.fast.ai/"
 ghapi = "ghapi._modidx:d"
 
 [project.optional-dependencies]
-dev = ['jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt']
+dev = ['jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt>=0.0.6']
 
 
 [project.scripts]
