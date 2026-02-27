@@ -43,6 +43,9 @@ def _decode_response(path: str) -> bool:
     needs_decode = (
         "/orgs/{org}/migrations/{migration_id}/archive",
         "/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}",
+        "/repos/{owner}/{repo}/actions/jobs/{job_id}/logs",
+        "/repos/{owner}/{repo}/actions/runs/{run_id}/logs",
+        "/repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/logs",
         "/repos/{owner}/{repo}/tarball/{ref}",
         "/repos/{owner}/{repo}/zipball/{ref}",
     )
