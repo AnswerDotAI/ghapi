@@ -12,7 +12,7 @@ license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@fast.ai"}]
 keywords = ['github', 'api']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 5 - Production/Stable", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore>=1.7.2']
+dependencies = ['fastcore>=1.12.19']
 
 [project.urls]
 Repository = "https://github.com/fastai/ghapi"
