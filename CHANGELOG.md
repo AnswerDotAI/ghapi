@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.0.11
+
+### New Features
+
+- Use Content-Type to determine response parsing ([#205](https://github.com/AnswerDotAI/ghapi/pull/205)), thanks to [@erikgaas](https://github.com/erikgaas)
+
+
 ## 1.0.10
 
 ### New Features
