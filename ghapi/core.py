@@ -38,26 +38,15 @@ def _mk_sig(req_args, opt_args, anno_args):
     params += [_mk_param(k, **_mk_sig_detls(v)) for k,v in anno_args.items()]
     return Signature(params)
 
-def _decode_response(path: str) -> bool:
-    "checks if a endpoint needs to have it's response from `fastcore.core.urlsend` decoded or just return json"
-    needs_decode = (
-        "/orgs/{org}/migrations/{migration_id}/archive",
-        "/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}",
-        "/repos/{owner}/{repo}/tarball/{ref}",
-        "/repos/{owner}/{repo}/zipball/{ref}",
-    )
-    return path not in needs_decode
-
 class _GhObj: pass
 
 # %% ../00_core.ipynb #d4a51c1a
 class _GhVerb(_GhObj):
-    __slots__ = 'path,verb,tag,name,summary,url,route_ps,params,data,preview,client,decode,__doc__'.split(',')
+    __slots__ = 'path,verb,tag,name,summary,url,route_ps,params,data,preview,client,__doc__'.split(',')
     def __init__(self, path, verb, oper, summary, url, params, data, preview, client, kwargs):
         tag,*name = oper.split('/')
         name = '__'.join(name)
         name = name.replace('-','_')
-        decode = _decode_response(path)
         path,_,_ = partial_format(path, **kwargs)
         route_ps = stringfmt_names(path)
         __doc__ = summary
@@ -71,7 +60,7 @@ class _GhVerb(_GhObj):
         for a,b in zip(args,flds): kwargs[b]=a
         route_p,query_p,data_p = [{p:kwargs[p] for p in o if p in kwargs}
                                  for o in (self.route_ps,self.params,d)]
-        return self.client(self.path, self.verb, headers=headers, decode=self.decode, route=route_p, query=query_p, data=data_p)
+        return self.client(self.path, self.verb, headers=headers, route=route_p, query=query_p, data=data_p)
 
     def __str__(self): return f'{self.tag}.{self.name}{signature(self)}\n{self.doc_url}'
     @property
@@ -120,7 +109,7 @@ class GhApi(_GhObj):
         self.debug,self.limit_cb,self.limit_rem = debug,limit_cb,5000
         self.gh_host = gh_host or GH_HOST
 
-    def __call__(self, path:str, verb:str=None, headers:dict=None, route:dict=None, query:dict=None, data=None, timeout=None, decode=True):
+    def __call__(self, path:str, verb:str=None, headers:dict=None, route:dict=None, query:dict=None, data=None, timeout=None):
         "Call a fully specified `path` using HTTP `verb`, passing arguments to `fastcore.core.urlsend`"
         if verb is None: verb = 'POST' if data else 'GET'
         headers = {**self.headers,**(headers or {})}
@@ -128,17 +117,19 @@ class GhApi(_GhObj):
             path = self.gh_host + path
         if route:
             for k,v in route.items(): route[k] = quote(str(route[k]), safe='')
-        return_json = ('json' in headers['Accept']) and (decode is True)
         debug = self.debug if self.debug else print_summary if os.getenv('GHAPI_DEBUG') else None
-        res,self.recv_hdrs = urlsend(path, verb, headers=headers or None, decode=decode, debug=debug, return_headers=True,
-                                     route=route or None, query=query or None, data=data or None, return_json=return_json, timeout=timeout)
+        res,self.recv_hdrs = urlsend(path, verb, headers=headers or None, decode=False, debug=debug, return_headers=True,
+                                     route=route or None, query=query or None, data=data or None, return_json=False, timeout=timeout)
+        ct = self.recv_hdrs.get('Content-Type', '')
+        if 'json' in ct or 'text' in ct: res = res.decode()
+        if 'json' in ct: res = loads(res)
         if 'X-RateLimit-Remaining' in self.recv_hdrs:
             newlim = self.recv_hdrs['X-RateLimit-Remaining']
             if self.limit_cb is not None and newlim != self.limit_rem:
                 self.limit_cb(int(newlim),int(self.recv_hdrs['X-RateLimit-Limit']))
             self.limit_rem = newlim
 
-        return dict2obj(res) if return_json else res
+        return dict2obj(res) if isinstance(res, (dict, list)) else res
 
     def __dir__(self): return super().__dir__() + list(self.groups)
     def _repr_markdown_(self): return "\n".join(f"- [{o}]({_docroot + o.replace('_', '-')})" for o in sorted(self.groups))
