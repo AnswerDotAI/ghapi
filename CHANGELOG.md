@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.0.13
+
+### Bugs Squashed
+
+- Only decode non binary types ([#206](https://github.com/AnswerDotAI/ghapi/issues/206))
+
+
 ## 1.0.12
 
 ### New Features
