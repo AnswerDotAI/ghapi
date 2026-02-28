@@ -90,6 +90,9 @@ def print_summary(req:Request):
     "Print `Request.summary` with the token (if any) removed"
     pprint(req.summary('Authorization'))
 
+# %% ../00_core.ipynb #dd66fcdd
+_binary_cts = ('octet-stream', 'zip', 'gzip', 'tar', 'image/', 'audio/', 'video/')
+
 # %% ../00_core.ipynb #83e8a9ce
 class GhApi(_GhObj):
     def __init__(self, owner=None, repo=None, token=None, jwt_token=None, debug=None, limit_cb=None, gh_host=None,
@@ -121,7 +124,7 @@ class GhApi(_GhObj):
         res,self.recv_hdrs = urlsend(path, verb, headers=headers or None, decode=False, debug=debug, return_headers=True,
                                      route=route or None, query=query or None, data=data or None, return_json=False, timeout=timeout)
         ct = self.recv_hdrs.get('Content-Type', '')
-        if 'json' in ct or 'text' in ct: res = res.decode()
+        if not any(t in ct for t in _binary_cts): res = res.decode()
         if 'json' in ct: res = loads(res)
         if 'X-RateLimit-Remaining' in self.recv_hdrs:
             newlim = self.recv_hdrs['X-RateLimit-Remaining']
