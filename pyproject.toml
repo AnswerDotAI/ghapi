@@ -39,6 +39,7 @@ version = {attr = "ghapi.__version__"}
 include = ["ghapi"]
 
 [tool.nbdev]
+allowed_cell_metadata_keys = ["solveit_ai"]
 nbs_path = '.'
 recursive = false
 jupyter_hooks = true
