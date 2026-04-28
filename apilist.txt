@@ -1,0 +1,242 @@
+# ghapi Module Documentation
+
+## ghapi.actions
+
+> Functionality for helping to create GitHub Actions workflows in Python
+
+- `def user_repo()`
+    List of `user,repo` from `env_github.repository
+
+- `def create_workflow_files(fname, workflow, build_script, prebuild)`
+    Create workflow and script files in suitable places in `github` folder
+
+- `def fill_workflow_templates(name, event, run, context, script, opersys, prebuild)`
+    Function to create a simple Ubuntu workflow that calls a Python `ghapi` script
+
+- `def env_contexts(contexts)`
+    Create a suitable `env:` line for a workflow to make a context available in the environment
+
+- `def create_workflow(name, event, contexts, opersys, prebuild)`
+    Function to create a simple Ubuntu workflow that calls a Python `ghapi` script
+
+- `@call_parse def gh_create_workflow(name, event, contexts)`
+    Supports `gh-create-workflow`, a CLI wrapper for `create_workflow`.
+
+- `def example_payload(event)`
+    Get an example of a JSON payload for `event`
+
+- `def github_token()`
+    Get GitHub token from `GITHUB_TOKEN` env var if available, or from `github` context
+
+- `def actions_output(name, value)`
+    Print the special GitHub Actions `::set-output` line for `name::value`
+
+- `def actions_debug(message)`
+    Print the special `::debug` line for `message`
+
+- `def actions_warn(message, details)`
+    Print the special `::warning` line for `message`
+
+- `def actions_error(message, details)`
+    Print the special `::error` line for `message`
+
+- `@contextmanager def actions_group(title)`
+    Context manager to print the special `::group`/`::endgroup` lines for `title`
+
+- `def actions_mask(value)`
+    Print the special `::add-mask` line for `value`
+
+- `def set_git_user(api)`
+    Set git user name/email to authenticated user (if `api`) or GitHub Actions bot (otherwise)
+
+## ghapi.auth
+
+> Helpers for creating GitHub API tokens
+
+- `def scope_str(*scopes)`
+    Convert `scopes` into a comma-separated string
+
+- `class GhDeviceAuth`
+    Get an oauth token using the GitHub API device flow
+
+    - `def __init__(self, client_id, *scopes)`
+
+- `@patch def url_docs(self)`
+    Default instructions on how to authenticate
+
+- `@patch def open_browser(self)`
+    Open a web browser with the verification URL
+
+- `@patch def auth(self)`
+    Return token if authentication complete, or `None` otherwise
+
+- `@patch def wait(self, cb, n_polls)`
+    Wait up to `n_polls` times for authentication to complete, calling `cb` after each poll, if passed
+
+- `def github_auth_device(wb, n_polls)`
+    Authenticate with GitHub, polling up to `n_polls` times to wait for completion
+
+## ghapi.build_lib
+
+- `def build_funcs(nm, url, docurl)`
+    Build module metadata.py from an Open API spec and optionally filter by a path `pre`
+
+## ghapi.cli
+
+> Access to the GitHub API from the command line
+
+- `def ghapi()`
+    Python backend for the `ghapi` command, which calls an endpoint by operation name
+
+- `def ghpath()`
+    Python backend for the `ghpath` command, which calls an endpoint by path
+
+- `def ghraw()`
+    Python backend for the `ghraw` command, which calls a fully-specified endpoint
+
+- `def completion_ghapi()`
+    Python backend for `completion-ghapi` command
+
+## ghapi.core
+
+> Detailed information on the GhApi API
+
+- `def print_summary(req)`
+    Print `Request.summary` with the token (if any) removed
+
+- `class GhApi`
+    - `def __init__(self, owner, repo, token, jwt_token, debug, limit_cb, gh_host, authenticate, **kwargs)`
+    - `def __call__(self, path, verb, headers, route, query, data, timeout)`
+        Call a fully specified `path` using HTTP `verb`, passing arguments to `fastcore.core.urlsend`
+
+    - `def __dir__(self)`
+    - `def __getattr__(self, k)`
+    - `def __getitem__(self, k)`
+        Lookup and call an endpoint by path and verb (which defaults to 'GET')
+
+    - `def full_docs(self)`
+
+- `def date2gh(dt)`
+    Convert `dt` (which is assumed to be in UTC time zone) to a format suitable for GitHub API operations
+
+- `def gh2date(dtstr)`
+    Convert date string `dtstr` received from a GitHub API operation to a UTC `datetime`
+
+- `@patch def create_gist(self, description, content, filename, public, img_paths)`
+    Create a gist, optionally with images where each md img url will be placed with img upload urls.
+
+- `@patch def delete_release(self, release)`
+    Delete a release and its associated tag
+
+- `@patch def upload_file(self, rel, fn)`
+    Upload `fn` to endpoint for release `rel`
+
+- `@patch def create_release(self, tag_name, branch, name, body, draft, prerelease, files)`
+    Wrapper for `GhApi.repos.create_release` which also uploads `files`
+
+- `@patch def list_tags(self, prefix)`
+    List all tags, optionally filtered to those starting with `prefix`
+
+- `@patch def list_branches(self, prefix)`
+    List all branches, optionally filtered to those starting with `prefix`
+
+- `@patch def delete_tag(self, tag)`
+    Delete a tag
+
+- `@patch def delete_branch(self, branch)`
+    Delete a branch
+
+- `@patch def get_repo_files(self, owner, repo, branch, inc, exc)`
+    Get all file items of a repo, optionally filtered.
+
+- `@patch def enable_pages(self, branch, path)`
+    Enable or update pages for a repo to point to a `branch` and `path`.
+
+## ghapi.event
+
+> Helpers for getting GitHub API events
+
+- `@patch @delegates(_list_events) def list_events(self, per_page, page, **kwargs)`
+    Fetch public events for repo network, org, user, or all
+
+- `@patch @delegates(_list_events) def list_events_parallel(self, per_page, n_pages, **kwargs)`
+    Fetch as many events from `list_events` in parallel as available
+
+- `class GhEvent`
+    Class for events returned from `fetch_events
+
+
+- `@patch @delegates(_list_events) def fetch_events(self, n_pages, pause, per_page, types, incl_bot, **kwargs)`
+    Generate an infinite stream of events, optionally filtered to `types, with `pause` seconds between requests
+
+- `def load_sample_events()`
+    Load sample events, downloading if needed
+
+- `def save_sample_events(n)`
+    Save the most recent `n` events as compressed JSON
+
+- `@patch(as_prop=True) def full_type(self)`
+    Concatenation of `type` and `payload.action` (if available)
+
+- `@patch(as_prop=True) def description(self)`
+    Description of event
+
+- `@patch(as_prop=True) def emoji(self)`
+    Emoji for event from `evt_emojis`
+
+- `@patch(as_prop=True) def text(self)`
+    Text (e.g. body or title) of event, if exists
+
+## ghapi.graphql
+
+> GitHub GraphQL API support for ghapi
+
+- `class GhGql`
+    GitHub GraphQL client with lazy-loaded schema
+
+    - `def __init__(self, token)`
+    - `@property def client(self)`
+        Lazy-load the GraphQL client and schema
+
+    - `@property def schema(self)`
+    - `def __call__(self, query, variables)`
+        Execute a GraphQL query
+
+    - `def list_queries(self)`
+        List all available top-level GraphQL query types
+
+    - `def query_args(self, name)`
+        Show arguments for a query type
+
+    - `def type_fields(self, name)`
+        List fields on a GraphQL type (use PascalCase, e.g. 'Repository')
+
+
+- `def list_queries()`
+    List all available top-level GraphQL query types
+
+- `def query_args(name)`
+    Show arguments for a query type
+
+- `def type_fields(name)`
+    List fields on a GraphQL type (use PascalCase, e.g. 'Repository')
+
+- `def gh_query(query, variables)`
+    Execute a GraphQL query
+
+## ghapi.page
+
+> Parallel and serial pagination
+
+- `def paged(oper, *args, **kwargs)`
+    Convert operation `oper(*args,**kwargs)` into an iterator
+
+- `def parse_link_hdr(header)`
+    Parse an RFC 5988 link header, returning a `dict` from rels to a `tuple` of URL and attrs `dict`
+
+- `@patch def last_page(self)`
+    Parse RFC 5988 link header from most recent operation, and extract the last page
+
+- `def pages(oper, n_pages, *args, **kwargs)`
+    Get `n_pages` pages from `oper(*args,**kwargs)`
+
