@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.0.14
+
+### Bugs Squashed
+
+- Fixes missing dep: Add 'gql' dependency to pyproject.toml ([#207](https://github.com/AnswerDotAI/ghapi/pull/207)), thanks to [@RensDimmendaal](https://github.com/RensDimmendaal)
+
+
 ## 1.0.13
 
 ### Bugs Squashed
