@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 1.0.15
+
+### New Features
+
+- Add ghapi.skill ([#210](https://github.com/AnswerDotAI/ghapi/issues/210))
+- Add gist helpers, `read_issue`/`read_pr`, and `check_status` methods; use threadpool for `get_repo_contents` ([#209](https://github.com/AnswerDotAI/ghapi/issues/209))
+
+
 ## 1.0.14
 
 ### Bugs Squashed
