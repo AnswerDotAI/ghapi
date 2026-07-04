@@ -21,8 +21,11 @@ Documentation = "https://ghapi.fast.ai/"
 [project.entry-points.nbdev]
 ghapi = "ghapi._modidx:d"
 
+[project.entry-points.pyskills]
+ghapi = "ghapi.skill"
+
 [project.optional-dependencies]
-dev = ['jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt>=0.0.6']
+dev = ['fastgit', 'jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt>=0.0.6']
 
 
 [project.scripts]
