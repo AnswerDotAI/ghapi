@@ -48,3 +48,6 @@ nbs_path = '.'
 recursive = false
 jupyter_hooks = true
 custom_sidebar = false
+
+[tool.chkstyle]
+skip_paths = ["_modidx.py"]
