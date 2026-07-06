@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.0.16
+
+### New Features
+
+- Add rich markdown reprs to `read_issue` and `check_status` results ([#211](https://github.com/AnswerDotAI/ghapi/issues/211))
+
+
 ## 1.0.15
 
 ### New Features
