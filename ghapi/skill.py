@@ -15,7 +15,7 @@
 
 # Reading an issue or PR (including comments and reviews)
 
-`api.read_issue(number)` is the single call for this -- it fetches title, body, and general comments, and for PRs also the unified diff, inline review comments, and review summaries (approved/changes-requested/commented), returning an `AttrDict`:
+`api.read_issue(number)` is the single call for this -- it fetches title, body, and general comments, and for PRs also the unified diff, inline review comments, and review summaries (approved/changes-requested/commented), returning an `AttrDict` whose repr is a readable summary (title, body, diff size, comment counts). Display it bare instead of printing fields; the full diff stays in `.diff`:
 
     info = api.read_issue(205)
     info.title, info.body, info.diff, info.comments, info.review_comments, info.reviews
@@ -27,6 +27,8 @@ When you want the whole thing as one LLM-ready markdown string rather than struc
 # CI / check status
 
 `api.check_status(ref)` merges the two ways CI results get reported -- the modern Checks API (`checks.list_for_ref`, what GitHub Actions uses) and the legacy Commit Status API (`repos.get_combined_status_for_ref`, used by some external CI) -- into one call, given a SHA/branch/tag. `api.pr_status(pull_number)` is the same, resolved from a PR's head commit.
+
+The result's repr is a one-line-per-check summary with a verdict computed from the check runs (the raw `state` field only reflects legacy statuses, so it reads `pending` on repos that only use Actions). Display it bare; drop to `.check_runs`/`.statuses` only when the summary isn't enough.
 
 # Day-to-day work
 

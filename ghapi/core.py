@@ -12,6 +12,7 @@ from fastcore.all import *
 from .metadata import funcs
 
 import mimetypes,base64
+from collections import Counter
 from inspect import signature,Parameter,Signature
 from urllib.request import Request
 from urllib.error import HTTPError
@@ -368,6 +369,16 @@ def enable_pages(self:GhApi, branch=None, path="/"):
     return self.repos.create_pages_site(source=source)
 
 # %% ../00_core.ipynb #519ec71c
+class _IssueInfo(AttrDict):
+    def _repr_markdown_(self):
+        res = [f"**{self.title}** ({'PR' if self.is_pr else 'issue'})", self.body]
+        if self.get('diff'): res.append(f"*diff: {self.diff.count('diff --git')} files, {len(self.diff.splitlines())} lines (see `.diff`)*")
+        parts = [f"{len(self.comments)} comments"]
+        if self.is_pr: parts += [f"{len(self.review_comments)} review comments"] + [f"{v} {k.lower()}" for k,v in Counter(r.state for r in self.reviews).items()]
+        res.append(f"*{'; '.join(parts)}*")
+        return '\n\n'.join(res)
+    __repr__ = _repr_markdown_
+
 @patch
 def read_issue(self:GhApi, issue_number:int):
     "Fetch an issue or PR: title, body, comments, and (for PRs) diff, review comments, and reviews"
@@ -384,7 +395,7 @@ def read_issue(self:GhApi, issue_number:int):
         evts = self.issues.list_events(issue_number)
         sha = first(e.commit_id for e in evts if e.commit_id)
         if sha: res['diff'] = self.repos.get_commit(sha, headers={'Accept': 'application/vnd.github.v3.diff'})
-    return dict2obj(res)
+    return _IssueInfo(dict2obj(res))
 
 # %% ../00_core.ipynb #ccf9d458
 def _filter_diff(diff, folder='', skip_files=('_modidx.py',)):
@@ -435,12 +446,22 @@ def read_pr(
     return res
 
 # %% ../00_core.ipynb #97730eae
+class _CheckStatus(AttrDict):
+    def _repr_markdown_(self):
+        runs = self.check_runs
+        if not runs: return 'no check runs'
+        if any(r.status!='completed' for r in runs): verdict = 'pending'
+        elif all(r.conclusion in ('success','neutral','skipped') for r in runs): verdict = 'success'
+        else: verdict = 'failure'
+        return '\n'.join([f'**{verdict}**', ''] + [f"- {r.name}: {r.conclusion or r.status}" for r in runs])
+    __repr__ = _repr_markdown_
+
 @patch
 def check_status(self:GhApi, ref:str):
     "Combined commit status and check-run results for `ref` (a SHA, branch, or tag)"
     combined = self.repos.get_combined_status_for_ref(ref)
     checks = self.checks.list_for_ref(ref)
-    return dict2obj(dict(state=combined.state, statuses=combined.statuses, check_runs=checks.check_runs))
+    return _CheckStatus(dict2obj(dict(state=combined.state, statuses=combined.statuses, check_runs=checks.check_runs)))
 
 @patch
 def pr_status(self:GhApi, pull_number:int):
