@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.1.0
+
+### New Features
+
+- Move notebooks to nbs/ subdirectory ([#213](https://github.com/AnswerDotAI/ghapi/issues/213))
+
+
 ## 1.0.16
 
 ### New Features
