@@ -23,8 +23,7 @@ from .core import *
 from .page import *
 from .actions import *
 
-import time,json,gzip
-from itertools import islice
+import json,gzip,asyncio
 
 # %% ../nbs/04_event.ipynb #a19bf236
 def _list_events(g, username=None, org=None, owner=None, repo=None):
@@ -44,18 +43,18 @@ def _id2int(x):
 # %% ../nbs/04_event.ipynb #c95e27c2
 @patch
 @delegates(_list_events)
-def list_events(self:GhApi, per_page=30, page=1, **kwargs):
+async def list_events(self:GhApi, per_page=30, page=1, **kwargs):
     "Fetch public events for repo network, org, user, or all"
     oper,kw = _list_events(self.activity, **kwargs)
-    return oper(per_page=per_page, page=page, **kw).map(_id2int)
+    return (await oper(per_page=per_page, page=page, **kw)).map(_id2int)
 
 # %% ../nbs/04_event.ipynb #c7f44fc6
 @patch
 @delegates(_list_events)
-def list_events_parallel(self:GhApi, per_page=30, n_pages=8, **kwargs):
+async def list_events_parallel(self:GhApi, per_page=30, n_pages=8, **kwargs):
     "Fetch as many events from `list_events` in parallel as available"
     oper,kw = _list_events(self.activity, **kwargs)
-    return pages(oper, n_pages, per_page=per_page, **kw).concat().map(_id2int)
+    return (await pages(oper, n_pages, per_page=per_page, **kw)).concat().map(_id2int)
 
 # %% ../nbs/04_event.ipynb #129d3fa2
 _bot_re = re.compile('b[o0]t')
@@ -88,17 +87,16 @@ def _cast_evt(o): return globals()[o.type](o)
 # %% ../nbs/04_event.ipynb #e3e61809
 @patch
 @delegates(_list_events)
-def fetch_events(self:GhApi, n_pages=3, pause=0.4, per_page=30, types=None, incl_bot=False, **kwargs):
+async def fetch_events(self:GhApi, n_pages=3, pause=0.4, per_page=30, types=None, incl_bot=False, **kwargs):
     "Generate an infinite stream of events, optionally filtered to `types, with `pause` seconds between requests"
     seen = set()
     if types: types=setify(types or None)
-    g = globals()
     while True:
-        evts = self.list_events_parallel(n_pages=n_pages, per_page=per_page, **kwargs)
+        evts = await self.list_events_parallel(n_pages=n_pages, per_page=per_page, **kwargs)
         new_evts = L(_cast_evt(o) for o in evts if o.id not in seen and _want_evt(o, types, incl_bot))
         seen.update(new_evts.attrgot('id'))
-        yield from new_evts
-        if pause: time.sleep(pause)
+        for o in new_evts: yield o
+        if pause: await asyncio.sleep(pause)
 
 # %% ../nbs/04_event.ipynb #83cc4ca9
 def load_sample_events():
@@ -112,9 +110,12 @@ def load_sample_events():
     return dict2obj(json.load(open_file(path))).map(_cast_evt)
 
 # %% ../nbs/04_event.ipynb #4347a0fd
-def save_sample_events(n=5000):
+async def save_sample_events(n=5000):
     "Save the most recent `n` events as compressed JSON"
-    evts = list(islice(api.fetch_events(incl_bot=True), n))
+    api,evts = GhApi(),[]
+    async for o in api.fetch_events(incl_bot=True):
+        evts.append(o)
+        if len(evts)>=n: break
     with gzip.open('sample_evts.json.gz', 'wt') as f: json.dump(obj2dict(evts), f)
 
 # %% ../nbs/04_event.ipynb #5b935849

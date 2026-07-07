@@ -7,12 +7,12 @@ name = "ghapi"
 dynamic = ["version"]
 description = "A python client for the GitHub API"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jeremy Howard", email = "info@fast.ai"}]
 keywords = ['github', 'api']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 5 - Production/Stable", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
-dependencies = ['fastcore>=1.12.19']
+dependencies = ['fastcore>=1.12.19', 'fastspec>=0.0.12']
 
 [project.urls]
 Repository = "https://github.com/fastai/ghapi"
@@ -25,7 +25,7 @@ ghapi = "ghapi._modidx:d"
 ghapi = "ghapi.skill"
 
 [project.optional-dependencies]
-dev = ['fastgit', 'jsonref', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt>=0.0.6']
+dev = ['fastgit', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm', 'llms-txt>=0.0.6']
 
 
 [project.scripts]

@@ -14,9 +14,9 @@ $NEEDS
       matrix: { os: $OPERSYS }
     runs-on: ${{ matrix.os }}-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
-      with: {python-version: '3.8'}
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with: {python-version: '3.12'}
     - name: Run script
       env:
 $CONTEXTS
@@ -30,9 +30,9 @@ pre_tmpl = """prebuild:
   outputs:
     out: ${{ toJson(steps) }}
   steps:
-  - uses: actions/checkout@v1
-  - uses: actions/setup-python@v2
-    with: {python-version: '3.8'}
+  - uses: actions/checkout@v4
+  - uses: actions/setup-python@v5
+    with: {python-version: '3.12'}
   - name: Create release
     id: step1
     env:

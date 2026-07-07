@@ -11,13 +11,16 @@ __all__ = ['paged', 'parse_link_hdr', 'pages']
 from fastcore.all import *
 from .core import *
 
-import re
+import re, asyncio
 from urllib.parse import parse_qs,urlsplit
 
 # %% ../nbs/03_page.ipynb #cea42302
-def paged(oper, *args, per_page=30, max_pages=9999, **kwargs):
-    "Convert operation `oper(*args,**kwargs)` into an iterator"
-    yield from itertools.takewhile(noop, (oper(*args, per_page=per_page, page=i, **kwargs) for i in range(1,max_pages+1)))
+async def paged(oper, *args, per_page=30, max_pages=9999, **kwargs):
+    "Convert operation `oper(*args,**kwargs)` into an async iterator, requesting pages serially until one comes back empty"
+    for i in range(1, max_pages+1):
+        res = await oper(*args, per_page=per_page, page=i, **kwargs)
+        if not res: return
+        yield res
 
 # %% ../nbs/03_page.ipynb #56bd053b
 class _Scanner:
@@ -63,12 +66,7 @@ def last_page(self:GhApi):
     qs = parse_qs(urlsplit(last).query)
     return int(nested_idx(qs,'page',0) or 0)
 
-# %% ../nbs/03_page.ipynb #f34f91bd
-def _call_page(i, oper, args, kwargs, per_page):
-    return oper(*args, per_page=per_page, page=i, **kwargs)
-
 # %% ../nbs/03_page.ipynb #75052160
-def pages(oper, n_pages, *args, n_workers=None, per_page=100, **kwargs):
-    "Get `n_pages` pages from `oper(*args,**kwargs)`"
-    return parallel(_call_page, range(1,n_pages+1), oper=oper, per_page=per_page, args=args, kwargs=kwargs,
-                    progress=False, n_workers=ifnone(n_workers,n_pages), threadpool=True)
+async def pages(oper, n_pages, *args, per_page=100, **kwargs):
+    "Get `n_pages` pages from `oper(*args,**kwargs)`, in parallel"
+    return L(await asyncio.gather(*[oper(*args, per_page=per_page, page=i, **kwargs) for i in range(1,n_pages+1)]))

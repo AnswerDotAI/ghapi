@@ -10,7 +10,8 @@ API](https://docs.github.com/rest). Because we automatically convert the
 spec](https://docs.github.com/rest/overview/openapi-description) to a
 Pythonic API, [`ghapi`](https://ghapi.fast.ai/cli.html#ghapi) is always
 up to date with the latest changes to GitHub APIs. Furthermore, because
-this is all done dynamically, the entire package is only 35kB in size!
+this is all built dynamically from a compact pre-parsed copy of the
+spec, the package stays small and is always up to date.
 
 Using [`ghapi`](https://ghapi.fast.ai/cli.html#ghapi), you can automate
 nearly anything that you can do through the GitHub web interface or
@@ -65,7 +66,12 @@ any page as an interactive notebook in Google Colab, click the *Colab*
 badge at the top of the page.
 
 To access the GitHub API, first create a
-[`GhApi`](https://ghapi.fast.ai/core.html#ghapi) object:
+[`GhApi`](https://ghapi.fast.ai/core.html#ghapi) object. Note that as of
+v2, [`ghapi`](https://ghapi.fast.ai/cli.html#ghapi) is async: every
+endpoint call is `await`ed. In Jupyter and modern Python REPLs top-level
+`await` just works, as shown below; in scripts, wrap your code in a
+function run with
+[`asyncio.run`](https://docs.python.org/3/library/asyncio-runner.html#asyncio.run).
 
 ``` python
 from ghapi.all import GhApi
@@ -80,21 +86,32 @@ functionality provided by the API by displaying the object:
 api
 ```
 
+<div class="prose" markdown="1">
+
 - [actions](https://docs.github.com/rest/reference/actions)
 - [activity](https://docs.github.com/rest/reference/activity)
+- [agent_tasks](https://docs.github.com/rest/reference/agent-tasks)
+- [agents](https://docs.github.com/rest/reference/agents)
 - [api_insights](https://docs.github.com/rest/reference/api-insights)
 - [apps](https://docs.github.com/rest/reference/apps)
 - [billing](https://docs.github.com/rest/reference/billing)
+- [campaigns](https://docs.github.com/rest/reference/campaigns)
 - [checks](https://docs.github.com/rest/reference/checks)
 - [classroom](https://docs.github.com/rest/reference/classroom)
+- [code_quality](https://docs.github.com/rest/reference/code-quality)
 - [code_scanning](https://docs.github.com/rest/reference/code-scanning)
 - [code_security](https://docs.github.com/rest/reference/code-security)
 - [codes_of_conduct](https://docs.github.com/rest/reference/codes-of-conduct)
 - [codespaces](https://docs.github.com/rest/reference/codespaces)
 - [copilot](https://docs.github.com/rest/reference/copilot)
+- [copilot_spaces](https://docs.github.com/rest/reference/copilot-spaces)
+- [credentials](https://docs.github.com/rest/reference/credentials)
 - [dependabot](https://docs.github.com/rest/reference/dependabot)
 - [dependency_graph](https://docs.github.com/rest/reference/dependency-graph)
 - [emojis](https://docs.github.com/rest/reference/emojis)
+- [enterprise_team_memberships](https://docs.github.com/rest/reference/enterprise-team-memberships)
+- [enterprise_team_organizations](https://docs.github.com/rest/reference/enterprise-team-organizations)
+- [enterprise_teams](https://docs.github.com/rest/reference/enterprise-teams)
 - [gists](https://docs.github.com/rest/reference/gists)
 - [git](https://docs.github.com/rest/reference/git)
 - [gitignore](https://docs.github.com/rest/reference/gitignore)
@@ -120,12 +137,16 @@ api
 - [teams](https://docs.github.com/rest/reference/teams)
 - [users](https://docs.github.com/rest/reference/users)
 
+</div>
+
 Then we can explore the endpoints provided by the API in each group,
 e.g. for the `git` group:
 
 ``` python
 api.git
 ```
+
+<div class="prose" markdown="1">
 
 - [git.create_blob](https://docs.github.com/rest/git/blobs#create-a-blob)(owner,
   repo, content, encoding): *Create a blob*
@@ -155,24 +176,32 @@ api.git
 - [git.get_tree](https://docs.github.com/rest/git/trees#get-a-tree)(owner,
   repo, tree_sha, recursive): *Get a tree*
 
+</div>
+
 Here’s how to learn about an endpoint you want to use, e.g.:
 
 ``` python
 api.git.get_ref
 ```
 
+<div class="prose" markdown="1">
+
 [git.get_ref](https://docs.github.com/rest/git/refs#get-a-reference)(owner,
 repo, ref): *Get a reference*
+
+</div>
 
 In Jupyter Notebook full tab completion, parameter lists, etc are
 provided for all endpoints. Endpoints are called as standard Python
 methods:
 
 ``` python
-api.git.get_ref(owner='fastai', repo='fastcore', ref='heads/master')
+await api.git.get_ref(owner='fastai', repo='fastcore', ref='heads/master')
 ```
 
-``` json
+<div class="prose" markdown="1">
+
+``` python
 { 'node_id': 'MDM6UmVmMjI1NDYwNTk5OnJlZnMvaGVhZHMvbWFzdGVy',
   'object': { 'sha': 'c0608379fe60014534c8dffe2e381138e8160f53',
               'type': 'commit',
@@ -180,6 +209,8 @@ api.git.get_ref(owner='fastai', repo='fastcore', ref='heads/master')
   'ref': 'refs/heads/master',
   'url': 'https://api.github.com/repos/AnswerDotAI/fastcore/git/refs/heads/master'}
 ```
+
+</div>
 
 To use [`ghapi`](https://ghapi.fast.ai/cli.html#ghapi) to access
 authenticated operations (other than when running through GitHub
@@ -215,10 +246,12 @@ api = GhApi(owner='fastai', repo='fastcore', token=github_token)
 We can now repeat the previous method, but only need to pass `ref`:
 
 ``` python
-api.git.get_ref('heads/master')
+await api.git.get_ref('heads/master')
 ```
 
-``` json
+<div class="prose" markdown="1">
+
+``` python
 { 'node_id': 'MDM6UmVmMjI1NDYwNTk5OnJlZnMvaGVhZHMvbWFzdGVy',
   'object': { 'sha': 'c0608379fe60014534c8dffe2e381138e8160f53',
               'type': 'commit',
@@ -227,17 +260,19 @@ api.git.get_ref('heads/master')
   'url': 'https://api.github.com/repos/AnswerDotAI/fastcore/git/refs/heads/master'}
 ```
 
+</div>
+
 Now that we’ve provided our token, we can use authenticated endpoints
 such as creating an issue:
 
 ``` python
-issue = api.issues.create("Remember to check out GhApi!")
+issue = await api.issues.create("Remember to check out GhApi!")
 ```
 
 Since we’ve now checked out GhApi, let’s close this issue. 😎
 
 ``` python
-api.issues.update(issue.number, state='closed')
+await api.issues.update(issue.number, state='closed')
 ```
 
 ## How to use - command line

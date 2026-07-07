@@ -74,7 +74,7 @@ def fill_workflow_templates(name:str, event, run, context, script, opersys='ubun
     "Function to create a simple Ubuntu workflow that calls a Python `ghapi` script"
     c = wf_tmpl
     if event=='workflow_dispatch:': event=''
-    needs = '    needs: [prebuild]' if prebuild else None
+    needs = '    needs: [prebuild]' if prebuild else ''
     for find,repl,i in (('NAME',name,0), ('EVENT',event,2), ('RUN',run,8), ('CONTEXTS',context,8),
                        ('OPERSYS',f'[{opersys}]',0), ('NEEDS',needs,0), ('PREBUILD',pre_tmpl if prebuild else '',2)):
         c = _replace(c, f'${find}', str(repl), i)
@@ -153,11 +153,11 @@ def actions_mask(value):
     print(f"::add-mask::{value}")
 
 # %% ../nbs/01_actions.ipynb #8682ff46
-def set_git_user(api=None):
+async def set_git_user(api=None):
     "Set git user name/email to authenticated user (if `api`) or GitHub Actions bot (otherwise)"
     if api:
-        user  = api.users.get_authenticated().name
-        email = first(api.users.list_emails_for_authenticated(), attrgetter('primary')).email
+        user  = (await api.users.get_authenticated()).name
+        email = first(await api.users.list_emails_for_authenticated(), attrgetter('primary')).email
     else:
         user  = 'github-actions[bot]'
         email = 'github-actions[bot]@users.noreply.github.com'
