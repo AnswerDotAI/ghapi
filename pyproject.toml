@@ -44,7 +44,7 @@ include = ["ghapi"]
 [tool.nbdev]
 allowed_metadata_keys = ['solveit']
 allowed_cell_metadata_keys = ['solveit_ai']
-nbs_path = '.'
+nbs_path = 'nbs'
 recursive = false
 jupyter_hooks = true
 custom_sidebar = false

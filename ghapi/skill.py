@@ -18,9 +18,9 @@
 `api.read_issue(number)` is the single call for this -- it fetches title, body, and general comments, and for PRs also the unified diff, inline review comments, and review summaries (approved/changes-requested/commented), returning an `AttrDict` whose repr is a readable summary (title, body, diff size, comment counts). Display it bare instead of printing fields; the full diff stays in `.diff`:
 
     info = api.read_issue(205)
-    info.title, info.body, info.diff, info.comments, info.review_comments, info.reviews
-
-This exists because GitHub's REST API doesn't treat these uniformly: a PR *is* an issue, so its general comments come from `issues.list_comments`, not `pulls.*`; the diff needs a special `Accept` header; and review comments/reviews are yet another pair of endpoints. `read_issue` also transparently falls back to a linked commit's diff for a plain issue that was closed by a commit reference (e.g. "Fixes #123").
+    print(info)
+    print(info.diff) # if needed
+    # See info.title, info.body, info.comments, info.review_comments, info.reviews for details
 
 When you want the whole thing as one LLM-ready markdown string rather than structured data, use the module-level `read_pr(num_or_url, owner, repo, replies=True)` -- it accepts a pasted GitHub URL directly, reduces the diff to just headers and changed lines, and appends formatted comments/review comments/reviews.
 
