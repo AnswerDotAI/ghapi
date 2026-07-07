@@ -1,3 +1,5 @@
+meta/
+cachy.jsonl
 _proc/
 .github/scripts/build-create.py 
 .github/scripts/prebuild-create.py

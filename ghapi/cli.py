@@ -9,9 +9,10 @@ __all__ = ['ghapi', 'ghpath', 'ghraw', 'completion_ghapi']
 
 # %% ../nbs/10_cli.ipynb #e10a0628
 from fastcore.all import *
-import ghapi.core as gh,inspect
 from .core import *
-from collections import defaultdict
+from fastspec.oapi import OpFunc
+
+import asyncio
 
 # %% ../nbs/10_cli.ipynb #44ebb54f
 def _parse_args(a):
@@ -43,7 +44,7 @@ def _call_api(f):
     cmd,api,pos,kw = _api()
     if not pos: return print(f"Usage: `{cmd}` operation <params>")
     call = f(pos, api)
-    return call if kw.get('help', None) else call(*pos, **kw)
+    return call if kw.get('help', None) else asyncio.run(call(*pos, **kw))
 
 # %% ../nbs/10_cli.ipynb #55f9002f
 def _ghapi(arg, api):
@@ -54,8 +55,8 @@ def _ghapi(arg, api):
 def ghapi():
     "Python backend for the `ghapi` command, which calls an endpoint by operation name"
     res = _call_api(_ghapi)
-    if isinstance(res, (gh._GhObj,dict,L)): print(res)
-    elif res: print(inspect.signature(res))
+    if isinstance(res, OpFunc): print(repr(res))
+    elif res is not None: print(res)
 
 # %% ../nbs/10_cli.ipynb #524623ba
 def _ghpath(arg, api): return api[arg.pop(0),arg.pop(0)]
@@ -70,7 +71,7 @@ def ghraw():
     "Python backend for the `ghraw` command, which calls a fully-specified endpoint"
     cmd,api,pos,kw = _api()
     if not pos: return print(f"Usage: `{cmd}` operation <params>")
-    print(api(*pos, **kw))
+    print(asyncio.run(api(*pos, **kw)))
 
 # %% ../nbs/10_cli.ipynb #21033494
 _TAB_COMPLETION="""
