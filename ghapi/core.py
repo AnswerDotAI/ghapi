@@ -6,7 +6,7 @@ Docs: https://ghapi.fast.ai/core.html.md"""
 
 # %% auto #0
 __all__ = ['GH_HOST', 'pspec', 'img_md_pat', 'EMPTY_TREE_SHA', 'GhTransport', 'GhSyncTransport', 'print_summary', 'GhApi',
-           'call_gh', 'date2gh', 'gh2date', 'read_pr', 'APIError']
+           'call_gh', 'date2gh', 'gh2date', 'read_pr', 'pr_file_diff', 'APIError']
 
 # %% ../nbs/00_core.ipynb #5b5cba7b
 from fastcore.all import *
@@ -21,7 +21,7 @@ from collections import Counter
 from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from time import sleep
-import os, shutil, tempfile, subprocess, fnmatch
+import os, shutil, tempfile, subprocess, fnmatch, html
 
 # %% ../nbs/00_core.ipynb #ed04302a
 _all_ = ['APIError']
@@ -438,6 +438,21 @@ async def read_pr(
         res += f"\n\n## Diff\n```diff\n{diff}\n```"
     if replies: res += _fmt_replies(info)
     return res
+
+# %% ../nbs/00_core.ipynb #69d12346
+async def pr_file_diff(
+    pr_number:int|str, # Issue/PR number, or GitHub issue/PR URL
+    filename:str, # File to get the diff for
+    owner:str=None, # Owner (not needed if URL passed)
+    repo:str=None, # Repo (not needed if URL passed)
+) -> str:
+    "Get the untruncated patch/diff for a single file in a PR"
+    if '/' in str(pr_number): *_,owner,repo,_,pr_number = str(pr_number).rstrip('/').split('/')
+    if not owner or not repo: raise ValueError('Pass `owner` and `repo`, or a full GitHub URL')
+    files = await GhApi(owner=owner, repo=repo).pulls.list_files(int(pr_number))
+    for f in files:
+        if f.filename == filename: return f"## {f.filename} (+{f.additions} -{f.deletions})\n\n```diff\n{html.unescape(f.patch)}\n```"
+    return f"File `{filename}` not found in PR #{pr_number}"
 
 # %% ../nbs/00_core.ipynb #97730eae
 class _CheckStatus(AttrDict):

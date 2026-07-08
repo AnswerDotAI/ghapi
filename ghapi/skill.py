@@ -38,6 +38,10 @@ Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees)
 
 `api.repos.get()`, `list_languages()`, `get_readme()`, `list_branches()`/`list_tags()`, `compare_commits()`, `list_contributors()`. For dumping a repo's actual file contents as LLM-ready context (not just metadata), `await toolslm.xml.repo2ctx(owner, repo)` downloads a tarball and renders it as XML without cloning -- reach for that instead of manually walking `get_repo_files`/`get_repo_contents` when the goal is "show me this repo's contents."
 
+# GraphQL
+
+Use `gh_query(query, variables)` for GitHub GraphQL requests that are awkward or inefficient with REST, such as nested org/repo queries or cross-repo searches.
+
 # Gists
 
 `await api.create_gist(description, content, img_paths=...)` (uploads images and rewrites markdown links to their raw URLs) and `api.update_gist(id, content)` (replaces the first file's content) are async-only. `api.load_gist(id_or_url)` (accepts a bare id or `user/id`) and `api.gist_file(id)` (first file's contents) follow the client's mode: awaitable on an async client, direct results on `GhApi(sync=True)`.
@@ -64,7 +68,43 @@ For anything that's about the local repo/working tree rather than GitHub itself 
 - `GITHUB_TOKEN` unset means unauthenticated (heavily rate-limited, no write access) -- `GhApi()` warns but doesn't raise.
 """
 
-from ghapi.all import GhApi, paged, pages, read_pr, call_gh
+from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh
+from ghapi.graphql import gh_query
 from fastgit import Git
+from pyskills import AllowPolicy, allow
+from fastspec.oapi import OpFunc
 
-__all__ = ['GhApi', 'paged', 'pages', 'read_pr', 'call_gh', 'Git']
+class ReadOnlyGhPolicy(AllowPolicy):
+    def __call__(self, obj, args, kwargs, data):
+        endp = 'api.github.com'
+        if endp not in obj.base_url:               raise PermissionError(f"Endpoint '{endp}' is allowed not '{obj.base_url}'")
+        if obj.verb.upper() not in ('GET','HEAD'): raise PermissionError(f"Only GET and HEAD are allowed for '{endp}'")
+
+allow({OpFunc: [('__call__', ReadOnlyGhPolicy())]})
+class GitPolicy(AllowPolicy):
+    "Allow only safecmd-default git subcommands"
+    cmds = {
+        'blame','branch','cat-file','config','describe','diff','log','ls-files','ls-tree','merge-base',
+        'remote','rev-parse','shortlog','show','stash','status','tag','fetch','add','commit','switch','checkout'}
+
+    def __call__(self, obj, args, kwargs, data):
+        cmd = args[0] if args else None
+        if cmd not in self.cmds: raise PermissionError(f"git {cmd} not allowed")
+        if cmd == 'config':
+            vals = [str(x) for x in args[1:]]
+            if not vals or vals[0] not in ('--get', '--list'): raise PermissionError("only git config --get/--list allowed")
+        if cmd == 'stash':
+            vals = [str(x) for x in args[1:]]
+            if vals[:1] != ['list']: raise PermissionError("only git stash list allowed")
+
+_gh_query_orig = gh_query
+def _gh_query_guard(query, variables=None):
+    "GraphQL query guard — blocks mutations and subscriptions"
+    if 'mutation' in query.lower() or 'subscription' in query.lower():
+        raise PermissionError('Only GraphQL queries are allowed; mutations and subscriptions are blocked')
+    return _gh_query_orig(query, variables)
+gh_query = _gh_query_guard
+
+allow({Git: [('__call__', GitPolicy())], OpFunc: [('__call__', ReadOnlyGhPolicy())]}, gh_query, paged, pages, read_pr, pr_file_diff, gh_notifs)
+
+__all__ = ['Git', 'GhApi', 'gh_query', 'call_gh', 'paged', 'pages', 'read_pr', 'pr_file_diff', 'gh_notifs']
