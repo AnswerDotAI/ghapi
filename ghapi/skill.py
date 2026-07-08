@@ -1,6 +1,6 @@
 """GitHub REST API access via `GhApi`, plus local git operations via `fastgit.Git`. Use this for day-to-day GitHub work: reading/creating issues and PRs, checking CI status, managing releases/branches/gists, and repo-local git operations -- all from Python, no shelling out to `gh`/`git` needed.
 
-`ghapi` is a full, always-up-to-date wrapper over the entire GitHub REST API, dynamically generated from GitHub's own OpenAPI spec. `fastgit` is a tiny complementary wrapper around the local `git` CLI, for anything that's about the local repo rather than GitHub's servers -- cheaper, and not rate-limited. As of v2, `ghapi` is fully async: `await` every API call (notebooks and modern REPLs support top-level `await`; scripts use `asyncio.run`). For sync code where that's impractical, `call_gh('repos.get', owner=..., repo=...)` makes a single call with its own event loop.
+`ghapi` is a full, always-up-to-date wrapper over the entire GitHub REST API, dynamically generated from GitHub's own OpenAPI spec. `fastgit` is a tiny complementary wrapper around the local `git` CLI, for anything that's about the local repo rather than GitHub's servers -- cheaper, and not rate-limited. As of v2, `ghapi` is async by default: `await` every API call (notebooks and modern REPLs support top-level `await`; scripts use `asyncio.run`). For sync code, `GhApi(sync=True)` gives a client whose generated endpoint calls block and return results directly (the convenience methods below stay async-only; drive those with `fastcore.net.run_sync` on an async client. `paged`/`pages` have sync twins `sync_paged`/`sync_pages`).
 
 # Auth
 
@@ -36,7 +36,7 @@ Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees)
 
 # Repo overview
 
-`api.repos.get()`, `list_languages()`, `get_readme()`, `list_branches()`/`list_tags()`, `compare_commits()`, `list_contributors()`. For dumping a repo's actual file contents as LLM-ready context (not just metadata), `toolslm.xml.repo2ctx(owner, repo)` downloads a tarball and renders it as XML without cloning -- reach for that instead of manually walking `get_repo_files`/`get_repo_contents` when the goal is "show me this repo's contents."
+`api.repos.get()`, `list_languages()`, `get_readme()`, `list_branches()`/`list_tags()`, `compare_commits()`, `list_contributors()`. For dumping a repo's actual file contents as LLM-ready context (not just metadata), `await toolslm.xml.repo2ctx(owner, repo)` downloads a tarball and renders it as XML without cloning -- reach for that instead of manually walking `get_repo_files`/`get_repo_contents` when the goal is "show me this repo's contents."
 
 # Gists
 
