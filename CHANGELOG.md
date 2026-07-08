@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 2.0.0
+
+### Breaking Changes
+
+- By default, GhApi is now async. All helper methods are async
+  - `GhApi(sync=True)` gives you the v1-style sync interface, although helpers don't work with sync
+
+
 ## 1.1.0
 
 ### New Features
