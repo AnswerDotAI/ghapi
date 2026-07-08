@@ -177,16 +177,16 @@ async def create_gist(self:GhApi, description, content, filename='gist.txt', pub
 
 # %% ../nbs/00_core.ipynb #ef04a3ee
 @patch
-async def load_gist(self:GhApi, gist_id:str):
-    "Retrieve a gist by id, or by `user/id` (as it appears in gist URLs)"
+def load_gist(self:GhApi, gist_id:str):
+    "Retrieve a gist by id, or by `user/id` (as it appears in gist URLs); coro if async client"
     if '/' in gist_id: *_,user,gist_id = gist_id.split('/')
     else: user = None
-    return await self.gists.get(gist_id, user=user)
+    return self.gists.get(gist_id, user=user)
 
 @patch
-async def gist_file(self:GhApi, gist_id:str):
-    "Get the first file from a gist"
-    return first((await self.load_gist(gist_id)).files.values())
+def gist_file(self:GhApi, gist_id:str):
+    "Get the first file from a gist; coro if async client"
+    return then(self.load_gist(gist_id), ~Self.files.values(), first)
 
 @patch
 async def update_gist(self:GhApi, gist_id:str, content:str):

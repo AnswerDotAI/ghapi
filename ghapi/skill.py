@@ -40,7 +40,7 @@ Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees)
 
 # Gists
 
-All awaited as usual: `await api.create_gist(description, content, img_paths=...)` (uploads images and rewrites markdown links to their raw URLs), `api.load_gist(id_or_url)` (accepts a bare id or `user/id`), `api.gist_file(id)` (first file's contents), `api.update_gist(id, content)` (replaces the first file's content).
+`await api.create_gist(description, content, img_paths=...)` (uploads images and rewrites markdown links to their raw URLs) and `api.update_gist(id, content)` (replaces the first file's content) are async-only. `api.load_gist(id_or_url)` (accepts a bare id or `user/id`) and `api.gist_file(id)` (first file's contents) follow the client's mode: awaitable on an async client, direct results on `GhApi(sync=True)`.
 
 # Local git (fastgit)
 
