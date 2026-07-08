@@ -42,10 +42,6 @@ Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees)
 
 Use `gh_query(query, variables)` for GitHub GraphQL requests that are awkward or inefficient with REST, such as nested org/repo queries or cross-repo searches.
 
-# Convenience helpers
-
-Use `await pr_file_diff(owner, repo, pr_num, filename)` for the patch of one exact PR file, and `await gh_notifs(days=7)` for a compact notification summary.
-
 # Gists
 
 `await api.create_gist(description, content, img_paths=...)` (uploads images and rewrites markdown links to their raw URLs) and `api.update_gist(id, content)` (replaces the first file's content) are async-only. `api.load_gist(id_or_url)` (accepts a bare id or `user/id`) and `api.gist_file(id)` (first file's contents) follow the client's mode: awaitable on an async client, direct results on `GhApi(sync=True)`.
