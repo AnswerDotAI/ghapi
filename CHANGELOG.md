@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 1.1.1
+
+### Bugs Squashed
+
+- Constrain `fastcore` to `<2` for ghapi 1.x ([#218](https://github.com/AnswerDotAI/ghapi/issues/218))
+
+
 ## 1.1.0
 
 ### New Features
