@@ -25,7 +25,7 @@ ghapi = "ghapi._modidx:d"
 ghapi = "ghapi.skill"
 
 [project.optional-dependencies]
-dev = ['fastgit', 'matplotlib', 'nbclassic', 'nbdev', 'pysymbol_llm>=0.0.6', 'llms-txt>=0.0.6']
+dev = ['fastgit', 'matplotlib', 'nbclassic', 'nbdev', 'pyyaml', 'pysym2md>=0.0.6', 'llms-txt>=0.0.6']
 
 
 [project.scripts]

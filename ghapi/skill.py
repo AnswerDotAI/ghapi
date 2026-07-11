@@ -34,6 +34,8 @@ The result's repr is a one-line-per-check summary with a verdict computed from t
 
 Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees), `issues.create_comment`, `issues.add_labels`, `pulls.create`, `pulls.merge`, `pulls.create_review`. List endpoints paginate at 30/page by default (100 max per page) -- for anything that might exceed one page, use `paged(api.issues.list_for_repo, ...)` (an async generator, one page per iteration: `async for`) or `await pages(api.issues.list_for_repo, n_pages, ...)` (fetches multiple pages in parallel; get `n_pages` from `api.last_page()` if not already known).
 
+Many repos require issues to follow their issue-form template, and the API bypasses templates entirely, so maintainers will bounce a hand-composed body. Before `issues.create` on a repo you don't maintain, fetch the templates with `await api.issue_template()` (parsed yml forms, with the owner-level `.github` repo as fallback), then build the body with `issue_body(tmpl, {label: content})`: it emits the same `### <label>` sections GitHub's web form would, and raises on missing required sections.
+
 # Repo overview
 
 `api.repos.get()`, `list_languages()`, `get_readme()`, `list_branches()`/`list_tags()`, `compare_commits()`, `list_contributors()`. For dumping a repo's actual file contents as LLM-ready context (not just metadata), `await toolslm.xml.repo2ctx(owner, repo)` downloads a tarball and renders it as XML without cloning -- reach for that instead of manually walking `get_repo_files`/`get_repo_contents` when the goal is "show me this repo's contents."
@@ -68,7 +70,7 @@ For anything that's about the local repo/working tree rather than GitHub itself 
 - `GITHUB_TOKEN` unset means unauthenticated (heavily rate-limited, no write access) -- `GhApi()` warns but doesn't raise.
 """
 
-from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh
+from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh, issue_body
 from ghapi.graphql import gh_query
 from fastgit import Git
 from pyskills import AllowPolicy, allow
@@ -107,4 +109,4 @@ gh_query = _gh_query_guard
 
 allow({Git: [('__call__', GitPolicy())], OpFunc: [('__call__', ReadOnlyGhPolicy())]}, gh_query, paged, pages, read_pr, pr_file_diff, gh_notifs)
 
-__all__ = ['Git', 'GhApi', 'gh_query', 'call_gh', 'paged', 'pages', 'read_pr', 'pr_file_diff', 'gh_notifs']
+__all__ = ['Git', 'GhApi', 'gh_query', 'call_gh', 'paged', 'pages', 'read_pr', 'pr_file_diff', 'gh_notifs', 'issue_body']
