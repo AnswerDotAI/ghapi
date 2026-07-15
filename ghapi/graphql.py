@@ -24,10 +24,7 @@ class GhGql:
         "Lazy-load the GraphQL client and schema"
         if self._client is None:
             if not self.token: raise ValueError("GITHUB_TOKEN not set")
-            transport = RequestsHTTPTransport(
-                url='https://api.github.com/graphql',
-                headers={'Authorization': f'bearer {self.token}'}
-            )
+            transport = RequestsHTTPTransport(url='https://api.github.com/graphql', headers={'Authorization': f'bearer {self.token}'})
             self._client = Client(transport=transport, fetch_schema_from_transport=True)
             self._client.execute(gql('{ __typename }'))  # Trigger schema fetch
         return self._client

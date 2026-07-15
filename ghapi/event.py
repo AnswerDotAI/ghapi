@@ -129,7 +129,7 @@ def full_type(self:GhEvent):
 _all_ = ['PageBuildEvent', 'ContentReferenceEvent', 'RepositoryImportEvent', 'CreateEvent', 'WorkflowRunEvent', 'DeleteEvent', 'OrganizationEvent', 'SponsorshipEvent', 'ProjectColumnEvent', 'PushEvent', 'ContextEvent', 'MilestoneEvent', 'ProjectCardEvent', 'ProjectEvent', 'PackageEvent', 'PullRequestEvent', 'RepositoryDispatchEvent', 'TeamAddEvent', 'WorkflowDispatchEvent', 'MemberEvent', 'MetaEvent', 'CodeScanningAlertEvent',     'PublicEvent', 'NeedsEvent', 'CheckRunEvent', 'SecurityAdvisoryEvent', 'PullRequestReviewCommentEvent', 'OrgBlockEvent', 'CommitCommentEvent', 'WatchEvent', 'MarketplacePurchaseEvent', 'StarEvent', 'InstallationRepositoriesEvent', 'CheckSuiteEvent', 'GithubAppAuthorizationEvent', 'TeamEvent', 'StatusEvent', 'RepositoryVulnerabilityAlertEvent', 'PullRequestReviewEvent', 'LabelEvent', 'InstallationEvent', 'ReleaseEvent', 'IssuesEvent', 'RepositoryEvent', 'GollumEvent', 'MembershipEvent', 'DeploymentEvent', 'DeployKeyEvent', 'IssueCommentEvent', 'PingEvent', 'DeploymentStatusEvent', 'ForkEvent', 'ScheduleEvent']
 
 # %% ../nbs/04_event.ipynb #83be1955
-evt_emojis = dict(
+evt_emojis = dict(  # chkstyle: ignore-node
     PushEvent=                             '⭐',
     CreateEvent=                           '🏭',
     IssueCommentEvent_created=             '💬',
@@ -157,7 +157,7 @@ def _ref_detl(pay): return pay.ref_type + _ref(pay)
 
 def _action(self):
     pay = self.payload
-    det = (f'issue #{pay.issue.number} on' if isinstance(self,IssuesEvent) else
+    det = (f'issue #{pay.issue.number} on' if isinstance(self,IssuesEvent) else  # chkstyle: ignore-node
            f'PR #{pay.number} on' if isinstance(self,PullRequestEvent) else
            f'member {pay.member.login} in' if isinstance(self,MemberEvent) else
            f'review comment on PR #{pay.pull_request.number} in' if isinstance(self,PullRequestReviewCommentEvent) else
@@ -173,7 +173,7 @@ def description(self:GhEvent):
     "Description of event"
     act,pay,cls,repo = self.actor,self.payload,type(self),self.repo
     res = _action(self)
-    return res if res else (
+    return res if res else (  # chkstyle: ignore-node
         f'deleted {_ref_detl(pay)} in' if isinstance(self,DeleteEvent) else
         f'created {_ref_detl(pay)} in' if isinstance(self,CreateEvent) else
         f'pushed {len(pay.commits)} commits{_ref(pay," to")} in' if isinstance(self,PushEvent) else
@@ -184,17 +184,16 @@ def description(self:GhEvent):
         remove_suffix(self.type, "Event")
     )
 
-#export
 @patch(as_prop=True)
 def emoji(self:GhEvent):
     "Emoji for event from `evt_emojis`"
     return evt_emojis.get(self.full_type, '❌')
 
 # %% ../nbs/04_event.ipynb #daad2a54
-described_evts = (PushEvent,CreateEvent,IssueCommentEvent,WatchEvent,PullRequestEvent,PullRequestReviewEvent,PullRequestReviewCommentEvent,
+described_evts = (PushEvent,CreateEvent,IssueCommentEvent,WatchEvent,PullRequestEvent,PullRequestReviewEvent,PullRequestReviewCommentEvent,  # chkstyle: ignore-node
                   DeleteEvent,ForkEvent,IssuesEvent,ReleaseEvent,MemberEvent,CommitCommentEvent,GollumEvent,PublicEvent)
 
-_text_keys = dict(
+_text_keys = dict(  # chkstyle: ignore-node
     CreateEvent = "description",
     PullRequestEvent = "pull_request.title",
     PullRequestReviewCommentEvent = "comment.body",

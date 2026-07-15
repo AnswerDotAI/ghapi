@@ -12,10 +12,10 @@ from fastcore.all import *
 from .core import *
 
 import webbrowser,time
-from urllib.parse import parse_qs,urlsplit
+from urllib.parse import parse_qs
 
 # %% ../nbs/02_auth.ipynb #46620407
-_scopes =(
+_scopes =(  # chkstyle: ignore-node
     'repo','repo:status','repo_deployment','public_repo','repo:invite','security_events','admin:repo_hook','write:repo_hook',
     'read:repo_hook','admin:org','write:org','read:org','admin:public_key','write:public_key','read:public_key','admin:org_hook',
     'gist','notifications','user','read:user','user:email','user:follow','delete_repo','write:discussion','read:discussion',
@@ -61,10 +61,8 @@ def open_browser(self:GhDeviceAuth):
 @patch
 def auth(self:GhDeviceAuth)->str:
     "Return token if authentication complete, or `None` otherwise"
-    resp = parse_qs(urlread(
-        'https://github.com/login/oauth/access_token',
-        client_id=self.client_id, device_code=self.device_code,
-        grant_type='urn:ietf:params:oauth:grant-type:device_code'))
+    resp = parse_qs(urlread('https://github.com/login/oauth/access_token',
+        client_id=self.client_id, device_code=self.device_code, grant_type='urn:ietf:params:oauth:grant-type:device_code'))
     err = nested_idx(resp, 'error', 0)
     if err == 'authorization_pending': return None
     if err: raise Exception(resp['error_description'][0])

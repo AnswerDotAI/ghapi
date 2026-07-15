@@ -18,7 +18,6 @@ from .templates import *
 
 import textwrap
 from contextlib import contextmanager
-from enum import Enum
 
 # %% ../nbs/01_actions.ipynb #fb69ba90
 # So we can run this outside of GitHub actions too, read from file if needed
@@ -26,8 +25,7 @@ for a,b in (('CONTEXT_GITHUB',context_example), ('CONTEXT_NEEDS',needs_example),
     if a not in os.environ: os.environ[a] = b
 
 contexts = 'github', 'env', 'job', 'steps', 'runner', 'secrets', 'strategy', 'matrix', 'needs'
-for context in contexts:
-    globals()[f'context_{context}'] = dict2obj(loads(os.getenv(f"CONTEXT_{context.upper()}", "{}")))
+for context in contexts: globals()[f'context_{context}'] = dict2obj(loads(os.getenv(f"CONTEXT_{context.upper()}", "{}")))
 
 # %% ../nbs/01_actions.ipynb #393990e1
 _all_ = ['context_github', 'context_env', 'context_job', 'context_steps', 'context_runner', 'context_secrets', 'context_strategy', 'context_matrix', 'context_needs']
@@ -41,7 +39,7 @@ def user_repo():
     return env_github.repository.split('/')
 
 # %% ../nbs/01_actions.ipynb #deb389d7
-Event = str_enum('Event',
+Event = str_enum('Event',  # chkstyle: ignore-node
     'page_build','content_reference','repository_import','create','workflow_run','delete','organization','sponsorship',
     'project_column','push','context','milestone','project_card','project','package','pull_request','repository_dispatch',
     'team_add','workflow_dispatch','member','meta','code_scanning_alert','public','needs','check_run','security_advisory',
@@ -54,8 +52,7 @@ Event = str_enum('Event',
 def _create_file(path:Path, fname:str, contents):
     if contents and not (path/fname).exists(): (path/fname).write_text(contents)
 
-def _replace(s:str, find, repl, i:int=0, suf:str=''):
-    return s.replace(find, textwrap.indent(repl, ' '*i)+suf)
+def _replace(s:str, find, repl, i:int=0, suf:str=''): return s.replace(find, textwrap.indent(repl, ' '*i)+suf)
 
 # %% ../nbs/01_actions.ipynb #26eb64e5
 def create_workflow_files(fname:str, workflow:str, build_script:str, prebuild:bool=False):
@@ -75,9 +72,9 @@ def fill_workflow_templates(name:str, event, run, context, script, opersys='ubun
     c = wf_tmpl
     if event=='workflow_dispatch:': event=''
     needs = '    needs: [prebuild]' if prebuild else ''
-    for find,repl,i in (('NAME',name,0), ('EVENT',event,2), ('RUN',run,8), ('CONTEXTS',context,8),
-                       ('OPERSYS',f'[{opersys}]',0), ('NEEDS',needs,0), ('PREBUILD',pre_tmpl if prebuild else '',2)):
-        c = _replace(c, f'${find}', str(repl), i)
+    repls = (('NAME',name,0), ('EVENT',event,2), ('RUN',run,8), ('CONTEXTS',context,8),
+        ('OPERSYS',f'[{opersys}]',0), ('NEEDS',needs,0), ('PREBUILD',pre_tmpl if prebuild else '',2))
+    for find,repl,i in repls: c = _replace(c, f'${find}', str(repl), i)
     create_workflow_files(name, c, script, prebuild=prebuild)
 
 # %% ../nbs/01_actions.ipynb #bc2f80a5
@@ -93,7 +90,7 @@ def_pipinst = 'pip install -Uq ghapi'
 def create_workflow(name:str, event:Event, contexts:list=None, opersys='ubuntu', prebuild=False):
     "Function to create a simple Ubuntu workflow that calls a Python `ghapi` script"
     script = "from fastcore.all import *\nfrom ghapi import *"
-    fill_workflow_templates(name, f'{event}:', def_pipinst, env_contexts(contexts),
+    fill_workflow_templates(name, f'{event}:', def_pipinst, env_contexts(contexts),  # chkstyle: ignore-node
                             script=script, opersys=opersys, prebuild=prebuild)
 
 # %% ../nbs/01_actions.ipynb #e8482286

@@ -11,7 +11,7 @@ __all__ = ['GH_HOST', 'pspec', 'img_md_pat', 'EMPTY_TREE_SHA', 'GhTransport', 'G
 # %% ../nbs/00_core.ipynb #5b5cba7b
 from fastcore.all import *
 from fastspec.spec import SpecParser
-from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc, _build_groups
+from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc, _build_groups, UNSET
 from fastspec.transport import AsyncTransport, SyncTransport
 from .gh_spec import spec
 from fastspec.errors import APIError
@@ -19,8 +19,7 @@ from fastspec.errors import APIError
 import mimetypes,base64
 from collections import Counter
 from urllib.parse import quote
-from datetime import datetime, timedelta, timezone
-from time import sleep
+from datetime import datetime
 import os, shutil, tempfile, subprocess, fnmatch, html
 
 # %% ../nbs/00_core.ipynb #ed04302a
@@ -60,8 +59,7 @@ class GhTransport(AsyncTransport):
         self.recv_hdrs = resp.headers
         if 'X-RateLimit-Remaining' in resp.headers:
             newlim = resp.headers['X-RateLimit-Remaining']
-            if self.limit_cb is not None and newlim != self.limit_rem:
-                self.limit_cb(int(newlim), int(resp.headers['X-RateLimit-Limit']))
+            if self.limit_cb is not None and newlim != self.limit_rem: self.limit_cb(int(newlim), int(resp.headers['X-RateLimit-Limit']))
             self.limit_rem = newlim
         if raw: return resp
         res = self._decode(resp)
@@ -90,7 +88,7 @@ def print_summary(method, url, kwargs):
 # %% ../nbs/00_core.ipynb #83e8a9ce
 class GhApi(OpenAPIClient):
     "GitHub API client. Endpoint groups (`issues`, `pulls`, ...) are generated per-instance from GitHub's OpenAPI metadata, so the class shows only convenience methods -- inspect a live instance, e.g. `doc(GhApi())`, to see the full API."
-    def __init__(self, owner=None, repo=None, token=None, jwt_token=None, debug=None, limit_cb=None, gh_host=None,
+    def __init__(self, owner=None, repo=None, token=None, jwt_token=None, debug=None, limit_cb=None, gh_host=None,  # chkstyle: ignore-node
                  authenticate=True, timeout=60.0, sync=False, **kwargs):
         self.headers = { 'Accept': 'application/vnd.github.v3+json' }
         if authenticate:
@@ -215,11 +213,11 @@ async def upload_file(self:GhApi, rel, fn):
 # %% ../nbs/00_core.ipynb #3cad71a4
 @patch
 async def create_release(self:GhApi, tag_name, branch='master', name=None, body='',
-                   draft=False, prerelease=False, files=None):
+    draft=False, prerelease=False, files=None, make_latest=UNSET):
     "Wrapper for `GhApi.repos.create_release` which also uploads `files`"
     if name is None: name = 'v'+tag_name
     rel = await self.repos.create_release(tag_name, target_commitish=branch, name=name, body=body,
-                                   draft=draft, prerelease=prerelease)
+        draft=draft, prerelease=prerelease, make_latest=make_latest)
     for file in listify(files): await self.upload_file(rel, file)
     return rel
 
@@ -299,8 +297,7 @@ async def create_file(self:GhApi, path, message, committer, author, content=None
 async def delete_file(self:GhApi, path, message, committer, author, sha=None, branch=None):
     if not branch: branch = (await self.repos.get())['default_branch']
     if sha is None: sha = (await self.list_files())[path].sha
-    return await self.repos.delete_file(path, message=message, sha=sha,
-                                  branch=branch, committer=committer, author=author)
+    return await self.repos.delete_file(path, message=message, sha=sha, branch=branch, committer=committer, author=author)
 
 # %% ../nbs/00_core.ipynb #93f6b559
 @patch
@@ -346,7 +343,7 @@ async def get_repo_contents(self:GhApi, owner, repo, branch='main',
     n_workers=16, # Max concurrent downloads
     **kwargs
 ):
-    repo_files = await self.get_repo_files(owner, repo, **kwargs)
+    repo_files = await self.get_repo_files(owner, repo, branch, **kwargs)
     paths = repo_files.attrgot("path")
     return L(await parallel_async(self.get_file_content, paths, owner=owner, repo=repo, branch=branch, n_workers=n_workers))
 
@@ -379,7 +376,7 @@ async def read_issue(self:GhApi, issue_number:int):
     try: pr = await self.pulls.get(issue_number)
     except APIError: pr = None
     iss = await self.issues.get(issue_number)
-    res = dict(title=iss.title, body=iss.body or '', is_pr=pr is not None,
+    res = dict(title=iss.title, body=iss.body or '', is_pr=pr is not None,  # chkstyle: ignore-node
                comments=await self.issues.list_comments(issue_number))
     if pr is not None:
         res['diff'] = await self.pulls.get(issue_number, _headers={'Accept': 'application/vnd.github.v3.diff'})
@@ -395,7 +392,7 @@ async def read_issue(self:GhApi, issue_number:int):
 def _filter_diff(diff, folder='', skip_files=('_modidx.py',)):
     "Filter unified diff to only include files under `folder`, skipping `skip_files`"
     sections = re.split(r'(?=^diff --git )', diff, flags=re.MULTILINE)
-    return ''.join(s for s in sections
+    return ''.join(s for s in sections  # chkstyle: ignore-node
                    if s.startswith(f'diff --git a/{folder}')
                    and not any(f'/{f} ' in s.split('\n')[0] for f in skip_files))
 
@@ -460,7 +457,7 @@ def _parse_tmpl(name, txt):
     if not name.endswith(('.yml','.yaml')): return dict2obj(dict(name=name, raw=txt))
     import yaml
     d = yaml.safe_load(txt)
-    secs = [dict(label=b['attributes']['label'], type=b['type'],
+    secs = [dict(label=b['attributes']['label'], type=b['type'],  # chkstyle: ignore-node
                  required=bool(nested_idx(b, 'validations', 'required')),
                  options=[o['label'] if isinstance(o, dict) else o for o in b['attributes'].get('options', [])])
             for b in d.get('body', []) if b['type']!='markdown']
@@ -475,7 +472,7 @@ async def issue_template(self:GhApi):
         except APIError as e:
             if e.status_code != 404: raise
             continue
-        return L([_parse_tmpl(f.name, base64.b64decode((await self.repos.get_content(path=f.path, **kw)).content).decode())
+        return L([_parse_tmpl(f.name, base64.b64decode((await self.repos.get_content(path=f.path, **kw)).content).decode())  # chkstyle: ignore-node
                   for f in fs if f.name.endswith(('.md','.yml','.yaml')) and f.name != 'config.yml'])
     return L()
 
