@@ -2,13 +2,21 @@
 
 <!-- do not remove -->
 
+## 2.0.2
+
+### New Features
+
+- Add `make_latest` support to `create_release`, fix branch passing in `get_repo_contents` ([#220](https://github.com/AnswerDotAI/ghapi/issues/220))
+
+
 ## 2.0.1
 
 ### New Features
 
 - Support repository issue templates in GhApi ([#219](https://github.com/AnswerDotAI/ghapi/issues/219))
-- Make load_gist and gist_file sync-compatible by removing hard async, using `then` for lazy chaining ([#217](https://github.com/AnswerDotAI/ghapi/issues/217))
+- Make `load_gist` and `gist_file` sync-compatible by removing hard async, using `then` for lazy chaining ([#217](https://github.com/AnswerDotAI/ghapi/issues/217))
 - Skill improvements and allow policies ([#215](https://github.com/AnswerDotAI/ghapi/pull/215)), thanks to [@KeremTurgutlu](https://github.com/KeremTurgutlu)
+
 
 ## 2.0.0
 
@@ -252,4 +260,3 @@
 ## 0.1.0
 
 - First release with full API coverage
-
