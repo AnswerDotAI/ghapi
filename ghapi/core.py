@@ -263,6 +263,24 @@ async def get_branch(self:GhApi, branch=None):
     branch = branch or (await self.repos.get()).default_branch
     return (await self.list_branches(branch))[0]
 
+# %% ../nbs/00_core.ipynb #9f70ac44
+@patch
+async def commit_tree(self:GhApi, branch, message, tree, base=None):
+    "Commit `tree` entries to `branch`, creating it from `base` when needed"
+    try:
+        ref = await self.git.get_ref(f'heads/{branch}')
+        exists = True
+    except APIError as e:
+        if e.status_code != 404: raise
+        base = base or (await self.repos.get()).default_branch
+        ref,exists = await self.git.get_ref(f'heads/{base}'),False
+    parent = await self.git.get_commit(ref.object.sha)
+    new_tree = await self.git.create_tree(tree, parent.tree.sha)
+    commit = await self.git.create_commit(message, new_tree.sha, [parent.sha])
+    if exists: await self.git.update_ref(f'heads/{branch}', commit.sha)
+    else: await self.git.create_ref(f'refs/heads/{branch}', commit.sha)
+    return commit
+
 # %% ../nbs/00_core.ipynb #93b24881
 @patch
 async def list_files(self:GhApi, branch=None):

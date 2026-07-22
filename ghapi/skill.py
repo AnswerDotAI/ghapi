@@ -60,6 +60,14 @@ For anything that's about the local repo/working tree rather than GitHub itself 
 
 `Git.__call__` prints (not raises) on a `CalledProcessError` unless you pass `mute_errors=True` -- check the return value, don't assume no exception means success.
 
+# External PRs
+
+For a PR to another owner's repo, use normal local Git through the commit, ensure your fork exists, then use one client scoped to the fork. `commit_tree` uploads GitHub tree entries as one commit without Git transport authentication; override `owner` only when creating the upstream PR:
+
+    api = GhApi('me', repo)
+    await api.commit_tree(branch, message, entries)
+    await api.pulls.create(owner='upstream', head=f'me:{branch}', base='main', title=title, body=body)
+
 # Gotchas
 
 - A PR *is* an issue for general comments (`issues.list_comments`, not `pulls.*`) -- inline code-review comments are the separate `pulls.list_review_comments`.
