@@ -11,7 +11,12 @@
 
 # Discovering the API
 
-`api.<group>` (displayed bare, or via `doc()`) lists every endpoint in a group (issues, pulls, repos, checks, actions, gists, git, search, ...) with its signature and a link to GitHub's docs. `api['/path/{owner}/{repo}', 'GET']` looks up an endpoint by path+verb if you'd rather not use the grouped names. Endpoint names follow `<verb>_<noun>`, e.g. `issues.list_for_repo`, `issues.create`, `pulls.merge`. Displaying `api` itself lists every available group with a docs link. `doc()` works at every level of a live instance: `doc(api)`, `doc(api.issues)`, `doc(api.issues.create)`. It must be a live instance, since the API is generated at construction time: inspecting the `GhApi` *class* shows only the convenience methods and none of the endpoint groups.
+Displaying `api` lists every available group with a docs link. Endpoint names follow `<verb>_<noun>`, e.g. `issues.list_for_repo`, `issues.create`, `pulls.merge`. Groups can contain hundreds of endpoints, so search their names with `xdir()` instead of rendering the whole group, then inspect the matching endpoint:
+
+    xdir(api.actions, 'log')
+    doc(api.actions.download_job_logs_for_workflow_run)
+
+The optional `xdir` query is a case-insensitive regex. `doc()` works at every level of a live instance, but `doc(api.actions)` renders that group's complete endpoint list; use it only when the group is small enough to read. The instance must be live because the API is generated at construction time: inspecting the `GhApi` *class* shows only convenience methods, not generated groups. `api['/path/{owner}/{repo}', 'GET']` looks up an endpoint directly by path and verb.
 
 # Reading an issue or PR (including comments and reviews)
 
@@ -93,8 +98,7 @@ class ReadOnlyGhPolicy(AllowPolicy):
 allow({OpFunc: [('__call__', ReadOnlyGhPolicy())]})
 class GitPolicy(AllowPolicy):
     "Allow only safecmd-default git subcommands"
-    cmds = {
-        'blame','branch','cat-file','config','describe','diff','log','ls-files','ls-tree','merge-base',
+    cmds = {'blame','branch','cat-file','config','describe','diff','log','ls-files','ls-tree','merge-base',
         'remote','rev-parse','shortlog','show','stash','status','tag','fetch','add','commit','switch','checkout'}
 
     def __call__(self, obj, args, kwargs, data):
