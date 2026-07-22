@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 2.0.3
+
+### New Features
+
+- Add `commit_tree` method to atomically create or update a branch with multiple file entries in a single commit ([#221](https://github.com/AnswerDotAI/ghapi/issues/221))
+
+
 ## 2.0.2
 
 ### New Features
