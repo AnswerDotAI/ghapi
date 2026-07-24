@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 2.0.4
+
+### New Features
+
+- Add per-call owner/repo overrides to GhApi convenience methods via `gh_patch` ([#224](https://github.com/AnswerDotAI/ghapi/issues/224))
+- Use xdir() for endpoint discovery in skill ([#223](https://github.com/AnswerDotAI/ghapi/issues/223))
+
+
 ## 2.0.3
 
 ### New Features
