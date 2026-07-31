@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 2.0.5
+
+### New Features
+
+- Use public `mk_groups` from fastcore instead of private `_build_groups` ([#225](https://github.com/AnswerDotAI/ghapi/issues/225))
+
+
 ## 2.0.4
 
 ### New Features
