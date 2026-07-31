@@ -17,7 +17,7 @@ from contextvars import ContextVar
 
 from fastcore.all import *
 from fastspec.spec import SpecParser
-from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc, _build_groups, UNSET
+from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc
 from fastspec.transport import AsyncTransport, SyncTransport
 from .gh_spec import spec
 from fastspec.errors import APIError
@@ -127,7 +127,7 @@ class GhApi(OpenAPIClient):
         self.transport = tcls(debug=debug, limit_cb=limit_cb, timeout=timeout, base_headers=self.headers)
         self.ops = [fcls(o, self.transport, self.gh_host, defaults=_LiveDefaults(kwargs)) for o in pspec.ops]
         self.func_dict = {f'{o.path}:{o.verb.upper()}':o for o in self.ops}
-        self.groups = _build_groups(self.ops)
+        self.groups = mk_groups(self.ops)
         for k,v in self.groups.items(): setattr(self, k, v)
 
     def __call__(self, path:str, verb:str=None, headers:dict=None, route:dict=None, query:dict=None, data=None):
