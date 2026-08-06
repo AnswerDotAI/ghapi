@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 2.0.6
+
+### New Features
+
+- Add CI triage helpers: concise check-status rows, `failed_step_log`, and dependency-order tools ([#226](https://github.com/AnswerDotAI/ghapi/issues/226))
+
+
 ## 2.0.5
 
 ### New Features
