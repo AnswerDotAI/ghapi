@@ -9,8 +9,9 @@ __all__ = ['GH_HOST', 'pspec', 'img_md_pat', 'EMPTY_TREE_SHA', 'GhTransport', 'G
            'GhApi', 'call_gh', 'date2gh', 'gh2date', 'delete_release', 'create_release', 'list_tags', 'list_branches',
            'create_branch_empty', 'delete_tag', 'delete_branch', 'get_branch', 'commit_tree', 'list_files',
            'get_content', 'create_or_update_file', 'create_file', 'delete_file', 'update_contents', 'enable_pages',
-           'read_issue', 'read_pr', 'pr_file_diff', 'issue_template', 'issue_body', 'check_status', 'pr_status',
-           'APIError']
+           'read_issue', 'read_pr', 'pr_file_diff', 'issue_template', 'issue_body', 'CheckRun', 'CommitStatus',
+           'GhRows', 'check_status', 'pr_status', 'failed_step_log', 'dep_key', 'local_dep_graph', 'dep_closure',
+           'dep_order', 'dep_dependents', 'dep_graph', 'APIError']
 
 # %% ../nbs/00_core.ipynb #5b5cba7b
 from contextvars import ContextVar
@@ -27,6 +28,10 @@ from collections import Counter
 from urllib.parse import quote
 from datetime import datetime
 import os, shutil, tempfile, subprocess, fnmatch, html
+import asyncio
+
+try: import tomllib
+except ModuleNotFoundError: import tomli as tomllib
 
 # %% ../nbs/00_core.ipynb #ed04302a
 _all_ = ['APIError']
@@ -97,6 +102,8 @@ _gh_override = ContextVar('_gh_override', default={})
 class _LiveDefaults(dict):
     "Endpoint defaults, superseded at call time by any active `gh_patch` override"
     def items(self): return {**self, **_gh_override.get()}.items()
+    def __contains__(self, k): return dict.__contains__(self, k) or k in _gh_override.get()
+    def get(self, k, default=None): return _gh_override.get().get(k, dict.get(self, k, default))
 
 def gh_patch(fn):
     "`patch` `fn` into `GhApi`, adding `owner`/`repo` params that override the client defaults for this call and its internal calls"
@@ -532,6 +539,22 @@ def issue_body(tmpl, sections):
     return '\n\n'.join(res)
 
 # %% ../nbs/00_core.ipynb #97730eae
+def _dur(r):
+    if not (r.get('started_at') and r.get('completed_at')): return ''
+    t = lambda s: datetime.fromisoformat(s.replace('Z', '+00:00'))
+    secs = int((t(r.completed_at) - t(r.started_at)).total_seconds())
+    return f' ({secs//60}m{secs%60:02d}s)' if secs >= 60 else f' ({secs}s)'
+
+class CheckRun(AttrDict):
+    def __repr__(self): return f'{self.id}  {self.name}: {self.conclusion or self.status}{_dur(self)}'
+
+class CommitStatus(AttrDict):
+    def __repr__(self): return f'{self.context}: {self.state}'
+
+class GhRows(L):
+    "Result rows whose bare display is one actionable line each"
+    def __repr__(self): return '\n'.join(map(repr, self))
+
 class _CheckStatus(AttrDict):
     def _repr_markdown_(self):
         runs = self.check_runs
@@ -539,7 +562,7 @@ class _CheckStatus(AttrDict):
         if any(r.status!='completed' for r in runs): verdict = 'pending'
         elif all(r.conclusion in ('success','neutral','skipped') for r in runs): verdict = 'success'
         else: verdict = 'failure'
-        return '\n'.join([f'**{verdict}**', ''] + [f"- {r.name}: {r.conclusion or r.status}" for r in runs])
+        return '\n'.join([f'**{verdict}**', ''] + [f'- {r!r}' for r in runs+self.statuses])
     __repr__ = _repr_markdown_
 
 @gh_patch
@@ -547,9 +570,115 @@ async def check_status(self:GhApi, ref:str):
     "Combined commit status and check-run results for `ref` (a SHA, branch, or tag)"
     combined = await self.repos.get_combined_status_for_ref(ref)
     checks = await self.checks.list_for_ref(ref)
-    return _CheckStatus(dict2obj(dict(state=combined.state, statuses=combined.statuses, check_runs=checks.check_runs)))
+    return _CheckStatus(dict(state=combined.state, statuses=GhRows(CommitStatus(o) for o in combined.statuses),
+        check_runs=GhRows(CheckRun(o) for o in checks.check_runs)))
 
 @gh_patch
 async def pr_status(self:GhApi, pull_number:int):
     "Combined status and check-run results for a PR's head commit"
     return await self.check_status((await self.pulls.get(pull_number)).head.sha)
+
+# %% ../nbs/00_core.ipynb #569864f5
+@gh_patch
+async def failed_step_log(self:GhApi, job_id:int):
+    "Log sections of `job_id`'s failed steps, each headed by its step name"
+    job = await self.actions.get_job_for_workflow_run(job_id=job_id)
+    log = await self.actions.download_job_logs_for_workflow_run(job_id=job_id)
+    res = []
+    for s in job.steps:
+        if s.conclusion!='failure': continue
+        seg = [l[29:] for l in log.splitlines() if s.started_at[:-1] <= l[:19] <= s.completed_at[:-1]]
+        errs = [i for i,l in enumerate(seg) if l.startswith(r'##[error]')]
+        if errs: seg = seg[:errs[-1]+1]
+        res.append(f'# {s.name}\n' + '\n'.join(seg))
+    return '\n\n'.join(res)
+
+# %% ../nbs/00_core.ipynb #751c4e54
+def dep_key(dep):
+    "Package key for PEP 508 dependency spec `dep`"
+    dep = dep.split(";", 1)[0].strip()
+    dep = re.split(r"[\s<>=!~]", dep, maxsplit=1)[0]
+    return dep.split("[", 1)[0].casefold()
+
+# %% ../nbs/00_core.ipynb #16db589f
+def local_dep_graph(root):
+    "Dependency graph `{package: (repo dir, [dep packages])}` for checkouts under `root`"
+    res = {}
+    for p in sorted(Path(root).expanduser().glob("*/pyproject.toml")):
+        proj = tomllib.loads(p.read_text(encoding="utf-8")).get("project", {})
+        if not (name := proj.get("name")): continue
+        res[name.casefold()] = (p.parent.name, [dep_key(d) for d in proj.get("dependencies", [])])
+    return res
+
+# %% ../nbs/00_core.ipynb #a7c0113f
+def dep_closure(name, graph):
+    "Repo names for `name` and its transitive dependencies within `graph`"
+    seen, todo = set(), [name.casefold()]
+    while todo:
+        if (n := todo.pop()) in seen or n not in graph: continue
+        seen.add(n)
+        todo += graph[n][1]
+    return {graph[n][0] for n in seen}
+
+# %% ../nbs/00_core.ipynb #03e6a85e
+def _transdeps(pkg, graph):
+    seen, todo = set(), list(graph.get(pkg, ('', []))[1])
+    while todo:
+        if (n := todo.pop()) in seen or n not in graph: continue
+        seen.add(n)
+        todo += graph[n][1]
+    return seen
+
+def _listed(graph, names):
+    r2p = {r.casefold(): p for p, (r, _) in graph.items()}
+    if names is None: names = sorted(graph[p][0] for p in graph)
+    pkgs = {n: r2p.get(k := n.rpartition("/")[2].casefold(), k) for n in names}
+    td = {n: _transdeps(p, graph) & set(pkgs.values()) for n, p in pkgs.items()}
+    return names, pkgs, td
+
+def dep_order(graph, names=None):
+    "Order `names` (repo, package, or `owner/name` specs; default all of `graph`) dependency-first, ties most-depended-on first"
+    names, pkgs, td = _listed(graph, names)
+    ndeps = {n: sum(pkgs[n] in d for d in td.values()) for n in names}
+    order, done = [], set()
+    while len(order) < len(names):
+        ready = sorted((n for n in names if n not in order and td[n] <= done), key=lambda n: -ndeps[n])
+        if not ready: raise ValueError(f"dependency cycle among {sorted(set(names) - set(order))}")
+        order += ready
+        done |= {pkgs[n] for n in ready}
+    return order
+
+# %% ../nbs/00_core.ipynb #cf2ccf6d
+def dep_dependents(graph, names=None):
+    "For each of `names` (default all of `graph`), the listed names that transitively depend on it, most-depended-on first"
+    names, pkgs, td = _listed(graph, names)
+    res = {n: [m for m in names if pkgs[n] in td[m]] for n in names}
+    return dict(sorted(res.items(), key=lambda kv: -len(kv[1])))
+
+# %% ../nbs/00_core.ipynb #64709ee0
+@gh_patch
+async def dep_graph(self:GhApi, *repos, graph=None):
+    "Dependency graph for `repos` and their transitive same-owner deps, fetched from GitHub pyprojects; seed with `graph` to skip fetching known members"
+    graph = dict(graph or {})
+    seen = {r.casefold() for r, _ in graph.values()}
+    async def _fetch(spec):
+        owner, _, name = spec.rpartition("/")
+        try: res = await self.repos.get_content(repo=name, path="pyproject.toml", **(dict(owner=owner) if owner else {}))
+        except APIError: return spec, None
+        return spec, tomllib.loads(base64.b64decode(res.content).decode()).get("project", {})
+    todo, listed = [r for r in repos if r.rpartition("/")[2].casefold() not in seen], True
+    while todo:
+        todo = list(dict.fromkeys(todo))
+        seen |= {t.rpartition("/")[2].casefold() for t in todo}
+        results = await asyncio.gather(*map(_fetch, todo))
+        todo = []
+        for spec, proj in results:
+            owner, _, name = spec.rpartition("/")
+            if proj is None:
+                if listed: graph[name.casefold()] = (name, [])
+                continue
+            deps = [dep_key(d) for d in proj.get("dependencies", [])]
+            graph[(proj.get("name") or name).casefold()] = (name, deps)
+            todo += [f"{owner}/{d}" if owner else d for d in deps if d not in graph and d not in seen]
+        listed = False
+    return graph

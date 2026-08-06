@@ -36,7 +36,14 @@ When you want the whole thing as one LLM-ready markdown string rather than struc
 
 `await api.check_status(ref)` merges the two ways CI results get reported -- the modern Checks API (`checks.list_for_ref`, what GitHub Actions uses) and the legacy Commit Status API (`repos.get_combined_status_for_ref`, used by some external CI) -- into one call, given a SHA/branch/tag. `api.pr_status(pull_number)` is the same, resolved from a PR's head commit.
 
-The result's repr is a one-line-per-check summary with a verdict computed from the check runs (the raw `state` field only reflects legacy statuses, so it reads `pending` on repos that only use Actions). Display it bare; drop to `.check_runs`/`.statuses` only when the summary isn't enough.
+The result's repr is the triage step: a verdict line (computed from the check runs -- the raw `state` field only reflects legacy statuses, so it reads `pending` on repos that only use Actions), then the run list as concise one-line rows, `id  name: conclusion (duration)`, plus any legacy statuses. Display it bare; drop to the `.check_runs`/`.statuses` fields only when the rows aren't enough.
+
+The recommended process for working through a set of possibly-red repos:
+
+    api = GhApi(owner='AnswerDotAI')
+    sts = dict(zip(repos, await asyncio.gather(*(api.check_status('main', repo=r) for r in repos))))
+
+One `gather` gives every repo's verdict at once. For each red repo, display its full status -- every run, not just the failures, since a failed run beside a similar green one is itself diagnostic -- then feed the failing row's id to `await api.failed_step_log(id, repo=r)`: a check run and its Actions job share an id, so the row leads straight to its log, returned cut down to just the failed steps' sections. Job logs expire after about 90 days, so grab them while the run is fresh.
 
 # Day-to-day work
 
