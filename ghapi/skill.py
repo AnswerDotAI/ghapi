@@ -65,7 +65,7 @@ Use `gh_query(query, variables)` for GitHub GraphQL requests that are awkward or
 
 # Local git (fastgit)
 
-For anything that's about the local repo/working tree rather than GitHub itself -- current branch, staged diff, a local commit, log -- `Git` (from `fastgit`, but exported by `ghapi.skill`) wraps the `git` CLI directly:
+For anything that's about the local repo/working tree rather than GitHub itself -- current branch, staged diff, a local commit, log -- `Git` (from `fastgit`, but exported by `ghapi.skill`) wraps the `git` CLI directly. Its `d` takes any path-like and expands `~` itself, so pass paths bare -- `Git('~/git/repo')`:
 
     g = Git('.')
     g.status()
