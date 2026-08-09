@@ -91,7 +91,7 @@ Once the PR exists, the fork branch is the source of truth, and the local clone 
 - Rate limits: register `limit_cb` on `GhApi(...)` to get called back whenever the remaining quota changes, or check `api.limit_rem` any time.
 - HTTP errors raise `fastspec.errors.APIError`, which carries `.status_code` and the endpoint called.
 - `per_page` maxes out at 100; beyond that, use `paged`/`pages` rather than manually looping `page=`.
-- Per-call headers on named endpoints use `_headers=` (e.g. `await api.pulls.get(n, _headers={'Accept': 'application/vnd.github.v3.diff'})` for the raw diff); plain `headers=` is a kwarg only for direct `api(path, verb, ...)` calls.
+- Per-call headers on named endpoints use `headers_=` (e.g. `await api.pulls.get(n, headers_={'Accept': 'application/vnd.github.v3.diff'})` for the raw diff); plain `headers=` is a kwarg only for direct `api(path, verb, ...)` calls.
 - `GITHUB_TOKEN` unset means unauthenticated (heavily rate-limited, no write access) -- `GhApi()` warns but doesn't raise.
 """
 

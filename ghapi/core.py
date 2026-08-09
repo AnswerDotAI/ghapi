@@ -427,13 +427,13 @@ async def read_issue(self:GhApi, issue_number:int):
     res = dict(title=iss.title, body=iss.body or '', is_pr=pr is not None,  # chkstyle: ignore-node
                comments=await self.issues.list_comments(issue_number))
     if pr is not None:
-        res['diff'] = await self.pulls.get(issue_number, _headers={'Accept': 'application/vnd.github.v3.diff'})
+        res['diff'] = await self.pulls.get(issue_number, headers_={'Accept': 'application/vnd.github.v3.diff'})
         res['review_comments'] = await self.pulls.list_review_comments(issue_number)
         res['reviews'] = await self.pulls.list_reviews(issue_number)
     else:
         evts = await self.issues.list_events(issue_number)
         sha = first(e.commit_id for e in evts if e.commit_id)
-        if sha: res['diff'] = await self.repos.get_commit(sha, _headers={'Accept': 'application/vnd.github.v3.diff'})
+        if sha: res['diff'] = await self.repos.get_commit(sha, headers_={'Accept': 'application/vnd.github.v3.diff'})
     return _IssueInfo(dict2obj(res))
 
 # %% ../nbs/00_core.ipynb #ccf9d458
