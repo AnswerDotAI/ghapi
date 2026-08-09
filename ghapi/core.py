@@ -393,7 +393,7 @@ async def get_repo_contents(self:GhApi, owner, repo, branch='main',
 ):
     repo_files = await self.get_repo_files(owner, repo, branch, **kwargs)
     paths = repo_files.attrgot("path")
-    return L(await parallel_async(self.get_file_content, paths, owner=owner, repo=repo, branch=branch, n_workers=n_workers))
+    return await parallel_async(self.get_file_content, paths, owner=owner, repo=repo, branch=branch, n_workers=n_workers)
 
 # %% ../nbs/00_core.ipynb #ac4ab4e0
 @gh_patch

@@ -40,6 +40,9 @@ To access the GitHub API, first create a [`GhApi`](https://ghapi.fast.ai/core.ht
 
 ``` python
 from ghapi.all import GhApi
+```
+
+``` python
 api = GhApi()
 ```
 
@@ -48,8 +51,6 @@ Every part of the API includes documentation directly in the `api` object itself
 ``` python
 api
 ```
-
-<div class="prose" markdown="1">
 
 - [actions](https://docs.github.com/rest/reference/actions)
 - [activity](https://docs.github.com/rest/reference/activity)
@@ -90,6 +91,7 @@ api
 - [packages](https://docs.github.com/rest/reference/packages)
 - [private_registries](https://docs.github.com/rest/reference/private-registries)
 - [projects](https://docs.github.com/rest/reference/projects)
+- [pull_request_stacks](https://docs.github.com/rest/reference/pull-request-stacks)
 - [pulls](https://docs.github.com/rest/reference/pulls)
 - [rate_limit](https://docs.github.com/rest/reference/rate-limit)
 - [reactions](https://docs.github.com/rest/reference/reactions)
@@ -100,15 +102,11 @@ api
 - [teams](https://docs.github.com/rest/reference/teams)
 - [users](https://docs.github.com/rest/reference/users)
 
-</div>
-
 Then we can explore the endpoints provided by the API in each group, e.g. for the `git` group:
 
 ``` python
 api.git
 ```
-
-<div class="prose" markdown="1">
 
 - [git.create_blob](https://docs.github.com/rest/git/blobs#create-a-blob)(owner, repo, content, encoding): *Create a blob*
 - [git.get_blob](https://docs.github.com/rest/git/blobs#get-a-blob)(owner, repo, file_sha): *Get a blob*
@@ -124,15 +122,11 @@ api.git
 - [git.create_tree](https://docs.github.com/rest/git/trees#create-a-tree)(owner, repo, tree, base_tree): *Create a tree*
 - [git.get_tree](https://docs.github.com/rest/git/trees#get-a-tree)(owner, repo, tree_sha, recursive): *Get a tree*
 
-</div>
-
 Here’s how to learn about an endpoint you want to use, e.g.:
 
 ``` python
 api.git.get_ref
 ```
-
-<div class="prose" markdown="1">
 
 Get a reference
 
@@ -143,15 +137,11 @@ Parameters:
 - repo (str, required): The name of the repository without the `.git` extension. The name is not case sensitive.
 - ref (str, required): The Git reference. For more information, see “[Git References](https://git-scm.com/book/en/v2/Git-Internals-Git-References)” in the Git documentation.
 
-</div>
-
-In Jupyter Notebook full tab completion, parameter lists, etc are provided for all endpoints. Endpoints are called as standard Python methods:
+Jupyter provides full tab completion and parameter lists for every endpoint. Endpoints are called as standard Python methods:
 
 ``` python
 await api.git.get_ref(owner='fastai', repo='fastcore', ref='heads/master')
 ```
-
-<div class="prose" markdown="1">
 
 ``` python
 { 'node_id': 'MDM6UmVmMjI1NDYwNTk5OnJlZnMvaGVhZHMvbWFzdGVy',
@@ -162,17 +152,13 @@ await api.git.get_ref(owner='fastai', repo='fastcore', ref='heads/master')
   'url': 'https://api.github.com/repos/AnswerDotAI/fastcore/git/refs/heads/master'}
 ```
 
-</div>
-
-To use [`ghapi`](https://ghapi.fast.ai/cli.html#ghapi) to access authenticated operations (other than when running through GitHub Actions), you will need a GitHub [personal access token](https://docs.github.com/github/authenticating-to-github/creating-a-personal-access-token), which is a secret code used to access your account. If you don’t have one, [click here](https://github.com/settings/tokens/new) to create one. You’ll be asked to enter a name – choose anything you like, for instance “*ghapi*”. You’ll also be asked to choose “scopes”; this limits what you’ll be able to do with the API using this token. If you’re not sure, click “*repo*” “*gist*”, “*notifications*”, and “*workflow*”. Then click “Generate Token” at the bottom of the screen, and copy the token (the long string of letters and numbers shown). You can easily do that by clicking the little clipboard icon next to the token.
-
-Rather than pasting that token into every script, it’s easiest to save it as an environment variable. If you save it as `$GITHUB_TOKEN` then it will be most convenient, so add this to the end of your `.bashrc` or `.zshrc` file:
+To use authenticated operations (other than when running through GitHub Actions), you will need a GitHub [personal access token](https://docs.github.com/github/authenticating-to-github/creating-a-personal-access-token). If you don’t have one, [click here](https://github.com/settings/tokens/new) to create it, choosing the scopes you need (“repo”, “gist”, “notifications”, and “workflow” cover most uses). Save it as an environment variable named `GITHUB_TOKEN`, e.g. by adding this to your `.bashrc` or `.zshrc`:
 
     export GITHUB_TOKEN=xxx
 
-…replacing the `xxx` with the token you just copied. (Don’t forget to `source` that file after you change it.), pass a \[GitHub token\].
+[`GhApi`](https://ghapi.fast.ai/core.html#ghapi) uses that variable automatically, or you can pass `token=` explicitly.
 
-As well as your `token`, you can also pass any parameters you want auto-inserted into relevant methods, such as `owner` and `repo`:
+As well as `token`, you can pass any parameters you want auto-inserted into relevant methods, such as `owner` and `repo`:
 
 ``` python
 api = GhApi(owner='fastai', repo='fastcore', token=github_token)
@@ -184,8 +170,6 @@ We can now repeat the previous method, but only need to pass `ref`:
 await api.git.get_ref('heads/master')
 ```
 
-<div class="prose" markdown="1">
-
 ``` python
 { 'node_id': 'MDM6UmVmMjI1NDYwNTk5OnJlZnMvaGVhZHMvbWFzdGVy',
   'object': { 'sha': 'c0608379fe60014534c8dffe2e381138e8160f53',
@@ -194,8 +178,6 @@ await api.git.get_ref('heads/master')
   'ref': 'refs/heads/master',
   'url': 'https://api.github.com/repos/AnswerDotAI/fastcore/git/refs/heads/master'}
 ```
-
-</div>
 
 Now that we’ve provided our token, we can use authenticated endpoints such as creating an issue:
 
@@ -208,6 +190,37 @@ Since we’ve now checked out GhApi, let’s close this issue. 😎
 ``` python
 await api.issues.update(issue.number, state='closed')
 ```
+
+## Beyond the endpoints
+
+[`ghapi`](https://ghapi.fast.ai/cli.html#ghapi) also layers task-level conveniences over the generated endpoints – see the [GhApi details](https://ghapi.fast.ai/core.html) page for the full set. Highlights: [`paged`](https://ghapi.fast.ai/page.html#paged)/[`pages`](https://ghapi.fast.ai/page.html#pages) iterate any list endpoint; [`read_issue`](https://ghapi.fast.ai/core.html#read_issue)/[`read_pr`](https://ghapi.fast.ai/core.html#read_pr) gather a whole issue or PR (body, comments, diff, reviews) in one call; [`dep_graph`](https://ghapi.fast.ai/core.html#dep_graph)/[`dep_order`](https://ghapi.fast.ai/core.html#dep_order) sort an ecosystem’s repos dependency-first; plus helpers for gists, releases, branches, and repo files. For CI, [`check_status`](https://ghapi.fast.ai/core.html#check_status) combines commit statuses and check runs into one verdict, and [`failed_step_log`](https://ghapi.fast.ai/core.html#failed_step_log) drills into why a run went red:
+
+``` python
+api = GhApi(owner='AnswerDotAI', repo='ghapi', token=github_token)
+await api.check_status('main')
+```
+
+**success**
+
+- 92999419006 deploy: success (1m35s)
+
+## GraphQL
+
+When a read fans out across many repos, the [GraphQL client](https://ghapi.fast.ai/graphql.html) fetches it in one round trip: build schema-checked query fragments by attribute chaining, then `batch` them into a single request – here, the head commit of several repos at once. The same page covers interactive schema discovery, raw queries, and more:
+
+``` python
+from ghapi.graphql import GhGql
+```
+
+``` python
+gql = GhGql()
+await gql.batch(*[gql.repository(owner='AnswerDotAI', name=n).defaultBranchRef.target.oid
+    for n in ('fastcore', 'fasthtml', 'ghapi')])
+```
+
+    ['2e635e1b0b7a2ce125080d7fc26dc5c62dbf18ab',
+     'e5d967ae627c63035e296e6f319f220e278327e7',
+     '4ca8469d7c2ccc42cb71e30a576c719f306b5cf7']
 
 ## How to use - command line
 
