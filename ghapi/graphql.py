@@ -1,10 +1,10 @@
 """Query GitHub's GraphQL API: schema-aware chained queries, one-request batching, and raw GraphQL
 
-GitHub's REST API returns each resource's fixed shape, so a read that fans out -- "the head commit of these 100 repos" -- is 100 round trips, most of whose bytes you discard. The GraphQL API is one endpoint that accepts a *shape*: describe the nesting you want and the server returns exactly that, in one round trip. `GhGql` is [fastspec's GraphQL client](https://answerdotai.github.io/fastspec/gql.html) bound to GitHub: the schema ships pre-distilled with this package, so discovery (`xdir`, attribute completion, rich reprs), schema-checked query chaining with plain-kwargs arguments, and one-request batching all work with no setup beyond a `GITHUB_TOKEN`. Raw GraphQL text works at every level, and only query fields are exposed as attributes -- mutations require deliberately writing raw text.
+GitHub's REST API returns each resource's fixed shape, so a read that fans out -- "the head commit of these 100 repos" -- is 100 round trips, most of whose bytes you discard. The GraphQL API is one endpoint that accepts a *shape*: describe the nesting you want and the server returns exactly that, in one round trip. `GhGql` is [fastspec's GraphQL client](https://answerdotai.github.io/fastspec/gql.html) bound to GitHub: the schema ships pre-distilled with this package, so discovery (`xdir`, attribute completion, rich reprs), schema-checked query chaining with plain-kwargs arguments, and parallel chunked batching all work with no setup beyond a `GITHUB_TOKEN`. Raw GraphQL text works at every level, and only query fields are exposed as attributes -- mutations require deliberately writing raw text.
 
 `GhGql` is a thin binding: fastspec's `GqlClient` pointed at GitHub's endpoint, authenticated from `GITHUB_TOKEN` (or an explicit `token=`), with the shipped schema loaded. Fragments, `batch`, `gql.t`, raw calls, and `GqlError` with partial data are all inherited.
 
-Because a query is a shape, "run these N fragments" is just one bigger shape: `batch` aliases each fragment into a single request and returns results in input order. Checking which of a hundred repos moved -- the `ws-sync` fast path that motivated this module -- is one round trip.
+Because a query is a shape, "run these N fragments" is just one bigger shape: `batch` (from `GqlClient`) takes fragments -- or one generator of them -- and returns results in input order. `repo` builds the fragment for an `'owner/name'` spec. Checking which of a hundred repos moved is one `batch` call. GitHub resolves a query's aliases serially (a 103-alias query measured 5.5s), so `GhGql` sets `batch_chunk = 25`: large batches go as parallel chunked requests transparently (the same 103 repos: 1.7s):
 
 Not everything sits on a path you are building: enum values, input-object shapes, and union membership are looked up rather than navigated to. `gql.t` indexes every schema type by name.
 
@@ -27,7 +27,13 @@ GQL_URL = 'https://api.github.com/graphql'
 
 class GhGql(GqlClient):
     "GitHub GraphQL client using the shipped distilled schema"
+    batch_chunk = 25  # GitHub resolves aliases serially, so large batches go as parallel chunked requests
     def __init__(self, token=None):
         from ghapi.gql_spec import gqlspec
         super().__init__(GqlSpec.from_dict(gqlspec), GQL_URL,
             headers={'Authorization': f'bearer {token or os.environ["GITHUB_TOKEN"]}'})
+
+    def repo(self, spec):
+        "Repository fragment for an `'owner/name'` spec"
+        o, n = spec.split('/')
+        return self.repository(owner=o, name=n)

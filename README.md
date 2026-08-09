@@ -200,13 +200,14 @@ api = GhApi(owner='AnswerDotAI', repo='ghapi', token=github_token)
 await api.check_status('main')
 ```
 
-**success**
+**failure**
 
-- 92999419006 deploy: success (1m35s)
+- 93199230629 update-pip-graph: success (46s)
+- 93199227080 deploy: failure (22s)
 
 ## GraphQL
 
-When a read fans out across many repos, the [GraphQL client](https://ghapi.fast.ai/graphql.html) fetches it in one round trip: build schema-checked query fragments by attribute chaining, then `batch` them into a single request – here, the head commit of several repos at once. The same page covers interactive schema discovery, raw queries, and more:
+When a read fans out across many repos, the [GraphQL client](https://ghapi.fast.ai/graphql.html) fetches it in a single `batch` call – issued as parallel chunked requests under the hood, at a fraction of the rate-limit cost of per-repo REST calls. Build schema-checked query fragments by attribute chaining, then `batch` them: here, the head commit of several repos at once. The same page covers interactive schema discovery, cursor pagination, raw queries, and more:
 
 ``` python
 from ghapi.graphql import GhGql
@@ -218,9 +219,9 @@ await gql.batch(*[gql.repository(owner='AnswerDotAI', name=n).defaultBranchRef.t
     for n in ('fastcore', 'fasthtml', 'ghapi')])
 ```
 
-    ['2e635e1b0b7a2ce125080d7fc26dc5c62dbf18ab',
+    ['25c4f3228ccac3c5a63da71b5eaa4be3c428f602',
      'e5d967ae627c63035e296e6f319f220e278327e7',
-     '4ca8469d7c2ccc42cb71e30a576c719f306b5cf7']
+     'ad07893daac86de6693bc9bb57ae7216c1b347d0']
 
 ## How to use - command line
 
