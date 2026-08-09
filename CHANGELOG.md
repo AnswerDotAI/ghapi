@@ -2,6 +2,13 @@
 
 <!-- do not remove -->
 
+## 2.1.0
+
+### New Features
+
+- Rename per-call header kwarg from `_headers`= to `headers_`= for fastspec>=0.2.0 ([#230](https://github.com/AnswerDotAI/ghapi/issues/230))
+
+
 ## 2.0.7
 
 ### New Features
