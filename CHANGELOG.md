@@ -2,6 +2,18 @@
 
 <!-- do not remove -->
 
+## 2.0.7
+
+### New Features
+
+- Add GhGql.repo() owner/name helper, chunked parallel batch (`batch_chunk`=25), and paged() cursor pagination docs ([#229](https://github.com/AnswerDotAI/ghapi/issues/229))
+- Replace gql-based GraphQL client with fastspec GqlClient using shipped distilled schema, adding chained queries and batching ([#228](https://github.com/AnswerDotAI/ghapi/issues/228))
+
+### Bugs Squashed
+
+- Fix `create_release` to default branch to the repo default instead of hardcoded master ([#227](https://github.com/AnswerDotAI/ghapi/issues/227))
+
+
 ## 2.0.6
 
 ### New Features
