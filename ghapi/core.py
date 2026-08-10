@@ -487,7 +487,7 @@ async def read_pr(
         diff = _reduce_ctx(_filter_diff(info.diff, folder=folder))
         res += f"\n\n## Diff\n```diff\n{diff}\n```"
     if replies: res += _fmt_replies(info)
-    return res
+    return TruncatedString(res, 8_000)
 
 # %% ../nbs/00_core.ipynb #69d12346
 async def pr_file_diff(
@@ -528,7 +528,7 @@ class PullRows(GhRows):
     def __init__(self, items, maxlen=120):
         super().__init__(items)
         self.maxlen = maxlen
-    def __repr__(self): return '\n'.join(o.line(self.maxlen) for o in self)
+    def __repr__(self): return '\n'.join(o.line(self.maxlen) for o in self) or 'no PRs'
 
 @gh_patch
 async def list_prs(
@@ -630,7 +630,7 @@ async def failed_step_log(self:GhApi, job_id:int):
         errs = [i for i,l in enumerate(seg) if l.startswith(r'##[error]')]
         if errs: seg = seg[:errs[-1]+1]
         res.append(f'# {s.name}\n' + '\n'.join(seg))
-    return '\n\n'.join(res)
+    return TruncatedString('\n\n'.join(res), 8_000)
 
 # %% ../nbs/00_core.ipynb #751c4e54
 def dep_key(dep):
