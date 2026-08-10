@@ -2,6 +2,17 @@
 
 <!-- do not remove -->
 
+## 2.1.1
+
+### New Features
+
+- Add `list_prs` and `mark_done`, and return row objects from `gh_notifs` ([#231](https://github.com/AnswerDotAI/ghapi/pull/231)), thanks to [@jph00](https://github.com/jph00)
+
+### Bugs Squashed
+
+- add gql dep ([#222](https://github.com/AnswerDotAI/ghapi/pull/222)), thanks to [@RensDimmendaal](https://github.com/RensDimmendaal)
+
+
 ## 2.1.0
 
 ### New Features
