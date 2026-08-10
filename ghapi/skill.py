@@ -87,6 +87,7 @@ Once the PR exists, the fork branch is the source of truth, and the local clone 
 
 # Gotchas
 
+- Results with tuned reprs (`read_issue`, `check_status`, `list_prs`, `gh_notifs`) display bare. Raw endpoint results don't, so when only confirmation matters (a `create_comment`, a `pulls.update`), assign the result to a variable and show one key (`r.html_url`, `r.state`) instead of displaying the whole payload.
 - A PR *is* an issue for general comments (`issues.list_comments`, not `pulls.*`) -- inline code-review comments are the separate `pulls.list_review_comments`.
 - Rate limits: register `limit_cb` on `GhApi(...)` to get called back whenever the remaining quota changes, or check `api.limit_rem` any time.
 - HTTP errors raise `fastspec.errors.APIError`, which carries `.status_code` and the endpoint called.

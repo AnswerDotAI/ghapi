@@ -6,12 +6,12 @@ Docs: https://ghapi.fast.ai/core.html.md"""
 
 # %% auto #0
 __all__ = ['GH_HOST', 'pspec', 'img_md_pat', 'EMPTY_TREE_SHA', 'GhTransport', 'GhSyncTransport', 'print_summary', 'gh_patch',
-           'GhApi', 'call_gh', 'date2gh', 'gh2date', 'delete_release', 'create_release', 'list_tags', 'list_branches',
-           'create_branch_empty', 'delete_tag', 'delete_branch', 'get_branch', 'commit_tree', 'list_files',
-           'get_content', 'create_or_update_file', 'create_file', 'delete_file', 'update_contents', 'enable_pages',
-           'read_issue', 'read_pr', 'pr_file_diff', 'issue_template', 'issue_body', 'CheckRun', 'CommitStatus',
-           'GhRows', 'check_status', 'pr_status', 'failed_step_log', 'dep_key', 'local_dep_graph', 'dep_closure',
-           'dep_order', 'dep_dependents', 'dep_graph', 'APIError']
+           'GhApi', 'call_gh', 'date2gh', 'gh2date', 'GhRows', 'delete_release', 'create_release', 'list_tags',
+           'list_branches', 'create_branch_empty', 'delete_tag', 'delete_branch', 'get_branch', 'commit_tree',
+           'list_files', 'get_content', 'create_or_update_file', 'create_file', 'delete_file', 'update_contents',
+           'enable_pages', 'read_issue', 'read_pr', 'pr_file_diff', 'PullRow', 'PullRows', 'list_prs', 'issue_template',
+           'issue_body', 'CheckRun', 'CommitStatus', 'check_status', 'pr_status', 'failed_step_log', 'dep_key',
+           'local_dep_graph', 'dep_closure', 'dep_order', 'dep_dependents', 'dep_graph', 'APIError']
 
 # %% ../nbs/00_core.ipynb #5b5cba7b
 from contextvars import ContextVar
@@ -26,7 +26,7 @@ from fastspec.errors import APIError
 import mimetypes,base64
 from collections import Counter
 from urllib.parse import quote
-from datetime import datetime
+from datetime import datetime, timezone
 import os, shutil, tempfile, subprocess, fnmatch, html
 import asyncio
 
@@ -177,6 +177,11 @@ def date2gh(dt:datetime)->str:
 def gh2date(dtstr:str)->datetime:
     "Convert date string `dtstr` received from a GitHub API operation to a UTC `datetime`"
     return datetime.fromisoformat(dtstr.replace('Z', ''))
+
+# %% ../nbs/00_core.ipynb #7876622c
+class GhRows(L):
+    "Result rows whose bare display is one actionable line each"
+    def __repr__(self): return '\n'.join(map(repr, self))
 
 # %% ../nbs/00_core.ipynb #16068542
 img_md_pat = re.compile(r'!\[(?P<alt>.*?)\]\((?P<url>[^\s]+)\)')
@@ -499,6 +504,44 @@ async def pr_file_diff(
         if f.filename == filename: return f"## {f.filename} (+{f.additions} -{f.deletions})\n\n```diff\n{html.unescape(f.patch)}\n```"
     return f"File `{filename}` not found in PR #{pr_number}"
 
+# %% ../nbs/00_core.ipynb #2c94c2c8
+def _age(s):
+    "Compact age of ISO-8601 timestamp `s`"
+    secs = (datetime.now(timezone.utc) - datetime.fromisoformat(s.replace('Z', '+00:00'))).total_seconds()
+    for n,u in ((31536000,'y'), (2592000,'mo'), (604800,'w'), (86400,'d'), (3600,'h')):
+        if secs >= n: return f'{int(secs//n)}{u}'
+    return f'{int(secs//60)}m'
+
+def _pr_mark(r):
+    if r.get('merged_at'): return 'merged '
+    if r.state == 'closed': return 'closed '
+    if r.get('draft'): return 'draft '
+    return ''
+
+class PullRow(AttrDict):
+    "One pull request as an actionable line"
+    def line(self, maxlen=120): return f'#{self.number}  {_age(self.updated_at)}  {_pr_mark(self)}{truncstr(self.title, maxlen)}'
+    __repr__ = line
+
+class PullRows(GhRows):
+    "Pull request rows, displayed with titles truncated to `maxlen`"
+    def __init__(self, items, maxlen=120):
+        super().__init__(items)
+        self.maxlen = maxlen
+    def __repr__(self): return '\n'.join(o.line(self.maxlen) for o in self)
+
+@gh_patch
+async def list_prs(
+    self:GhApi,
+    state='open', # 'open', 'closed', or 'all'
+    maxlen=120, # Title characters shown per row
+    per_page=100, # PRs per request (100 max)
+    page=1, # Page of results, for repos with more than `per_page` PRs
+)->PullRows:
+    "Pull requests as one-line rows, most recently updated first"
+    prs = await self.pulls.list(state=state, sort='updated', direction='desc', per_page=per_page, page=page)
+    return PullRows([PullRow(o) for o in prs], maxlen=maxlen)
+
 # %% ../nbs/00_core.ipynb #55a976ea
 def _parse_tmpl(name, txt):
     "Parse issue template `txt`: yml forms into section labels for `issue_body`; md templates kept as `raw`"
@@ -550,10 +593,6 @@ class CheckRun(AttrDict):
 
 class CommitStatus(AttrDict):
     def __repr__(self): return f'{self.context}: {self.state}'
-
-class GhRows(L):
-    "Result rows whose bare display is one actionable line each"
-    def __repr__(self): return '\n'.join(map(repr, self))
 
 class _CheckStatus(AttrDict):
     def _repr_markdown_(self):
