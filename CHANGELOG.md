@@ -2,6 +2,15 @@
 
 <!-- do not remove -->
 
+## 2.1.2
+
+### New Features
+
+- Migrate transport import to fasttransport.core ([#234](https://github.com/AnswerDotAI/ghapi/issues/234))
+- Add MAXLEN constant (180) for display line truncation and use it as default maxlen ([#233](https://github.com/AnswerDotAI/ghapi/issues/233))
+- Truncate PR and failed-step-log output to 8k chars, show no PRs for empty PR lists ([#232](https://github.com/AnswerDotAI/ghapi/issues/232))
+
+
 ## 2.1.1
 
 ### New Features
