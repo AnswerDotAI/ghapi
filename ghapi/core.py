@@ -20,7 +20,7 @@ from contextvars import ContextVar
 from fastcore.all import *
 from fastspec.spec import SpecParser
 from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc
-from fastspec.transport import AsyncTransport, SyncTransport
+from fasttransport.core import AsyncTransport, SyncTransport
 from .gh_spec import spec
 from fastspec.errors import APIError
 
@@ -143,7 +143,7 @@ class GhApi(OpenAPIClient):
         if verb is None: verb = 'POST' if data else 'GET'
         if route: path = path.format(**{k:quote(str(v), safe='') for k,v in route.items()})
         if not path.startswith(('http://', 'https://')): path = self.gh_host + path
-        kw = dict(content=data) if isinstance(data, (bytes,str)) else dict(json_data=data)
+        kw = dict(content=data) if isinstance(data, (bytes,str)) else dict(json=data)
         return self.transport.request(verb, path, headers=headers, params=query, **kw)
 
     @property
