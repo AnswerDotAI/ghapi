@@ -18,6 +18,7 @@ __all__ = ['GH_HOST', 'pspec', 'img_md_pat', 'EMPTY_TREE_SHA', 'MAXLEN', 'GhTran
 from contextvars import ContextVar
 
 from fastcore.all import *
+from fastcore.ansi import strip_ansi
 from fastspec.spec import SpecParser
 from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc
 from fasttransport.core import AsyncTransport, SyncTransport
@@ -28,7 +29,7 @@ import mimetypes,base64
 from collections import Counter
 from urllib.parse import quote
 from datetime import datetime, timezone
-import os, shutil, tempfile, subprocess, fnmatch, html
+import os, shutil, tempfile, subprocess, fnmatch, html, io, zipfile
 import asyncio
 
 try: import tomllib
@@ -625,14 +626,13 @@ async def pr_status(self:GhApi, pull_number:int):
 async def failed_step_log(self:GhApi, job_id:int):
     "Log sections of `job_id`'s failed steps, each headed by its step name"
     job = await self.actions.get_job_for_workflow_run(job_id=job_id)
-    log = await self.actions.download_job_logs_for_workflow_run(job_id=job_id)
+    zf = zipfile.ZipFile(io.BytesIO(await self.actions.download_workflow_run_logs(run_id=job.run_id)))
     res = []
     for s in job.steps:
         if s.conclusion!='failure': continue
-        seg = [l[29:] for l in log.splitlines() if s.started_at[:-1] <= l[:19] <= s.completed_at[:-1]]
-        errs = [i for i,l in enumerate(seg) if l.startswith(r'##[error]')]
-        if errs: seg = seg[:errs[-1]+1]
-        res.append(f'# {s.name}\n' + '\n'.join(seg))
+        name = first(n for n in zf.namelist() if n.startswith(f'{job.name}/{s.number}_'))
+        lines = [strip_ansi(l.split(' ', 1)[-1]) for l in zf.read(name).decode().splitlines()]
+        res.append(f'# {s.name}\n' + '\n'.join(lines))
     return TruncatedString('\n\n'.join(res), 8_000)
 
 # %% ../nbs/00_core.ipynb #751c4e54
