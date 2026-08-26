@@ -1,10 +1,10 @@
 project:
   type: website
   pre-render: 
-    - pysym2md --output_file apilist.txt ghapi
+    - pysym2md --output-file apilist.txt ghapi
   post-render: 
-    - llms_txt2ctx llms.txt --optional true --save_nbdev_fname llms-ctx-full.txt
-    - llms_txt2ctx llms.txt --save_nbdev_fname llms-ctx.txt
+    - llms_txt2ctx llms.txt --optional true --save-nbdev-fname llms-ctx-full.txt
+    - llms_txt2ctx llms.txt --save-nbdev-fname llms-ctx.txt
   resources: 
     - "*.txt"
   preview:
