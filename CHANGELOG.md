@@ -2,6 +2,18 @@
 
 <!-- do not remove -->
 
+## 2.1.3
+
+### New Features
+
+- Import APIError from fasttransport ([#237](https://github.com/AnswerDotAI/ghapi/pull/237)), thanks to [@jph00](https://github.com/jph00)
+- Extract failed step logs from workflow run log zip archive, stripping ANSI codes, instead of parsing job logs by timestamp ([#235](https://github.com/AnswerDotAI/ghapi/issues/235))
+
+### Bugs Squashed
+
+- Update CLI flags for fastcore.script hyphenation ([#236](https://github.com/AnswerDotAI/ghapi/pull/236)), thanks to [@jph00](https://github.com/jph00)
+
+
 ## 2.1.2
 
 ### New Features
