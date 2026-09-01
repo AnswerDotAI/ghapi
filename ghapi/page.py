@@ -11,7 +11,7 @@ __all__ = ['paged', 'parse_link_hdr', 'pages', 'sync_paged', 'sync_pages', 'Noti
 from fastcore.all import *
 from .core import *
 from .core import _age
-from fastspec.errors import APIError
+from fasttransport.errors import APIError
 
 import re, asyncio
 from datetime import datetime, timedelta, timezone

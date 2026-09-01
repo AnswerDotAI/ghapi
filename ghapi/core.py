@@ -23,7 +23,7 @@ from fastspec.spec import SpecParser
 from fastspec.oapi import OpenAPIClient, OpFunc, SyncOpFunc
 from fasttransport.core import AsyncTransport, SyncTransport
 from .gh_spec import spec
-from fastspec.errors import APIError
+from fasttransport.errors import APIError
 
 import mimetypes,base64
 from collections import Counter
