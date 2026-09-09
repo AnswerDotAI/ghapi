@@ -122,7 +122,7 @@ api.git
 - [git.create_tree](https://docs.github.com/rest/git/trees#create-a-tree)(owner, repo, tree, base_tree): *Create a tree*
 - [git.get_tree](https://docs.github.com/rest/git/trees#get-a-tree)(owner, repo, tree_sha, recursive): *Get a tree*
 
-Here’s how to learn about an endpoint you want to use, e.g.:
+Read an endpoint’s full documentation on the generated object. Its display includes parameter descriptions, bound defaults, request controls, and async usage. With pyskills, use `doc(api.git.get_ref)` for the same documentation, or `xdir(api.git, 'ref')` to search names. Construction and discovery send no requests:
 
 ``` python
 api.git.get_ref

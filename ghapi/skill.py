@@ -1,99 +1,43 @@
-"""GitHub REST API access via `GhApi`, plus local git operations via `fastgit.Git`. Trigger: ALWAYS read before reading/creating issues and PRs, checking CI status, managing releases/branches/gists, and doing repo-local git operations.
+"""GitHub REST and GraphQL access, plus local git operations. Read before working with GitHub issues, PRs, CI, releases, branches, or gists, and before repo-local git operations.
 
-`ghapi` is a full, always-up-to-date wrapper over the entire GitHub REST API, dynamically generated from GitHub's own OpenAPI spec. `fastgit` is a tiny complementary wrapper around the local `git` CLI, for anything that's about the local repo rather than GitHub's servers -- cheaper, and not rate-limited. As of v2, `ghapi` is async by default: `await` every API call (notebooks and modern REPLs support top-level `await`; scripts use `asyncio.run`). For sync code, `GhApi(sync=True)` gives a client whose generated endpoint calls block and return results directly (the convenience methods below stay async-only; drive those with `fastcore.aio.run_sync` on an async client. `paged`/`pages` have sync twins `sync_paged`/`sync_pages`).
+Use `GhApi` for GitHub resources and `Git` for the local checkout. The REST surface comes from the bundled GitHub OpenAPI metadata. Use `GhGql` for nested reads or queries that would otherwise require many REST requests. Creating clients and inspecting their generated objects does not send requests.
 
-# Auth
+# Discover before calling
 
-`api = GhApi()` authenticates automatically from the `GITHUB_TOKEN` environment variable (already set in most dev environments via `gh auth login`) -- no device-flow login needed. Pass `owner=`/`repo=` to the constructor to bind them as defaults for every call that needs them, so you don't have to repeat `owner, repo` on every method call:
+Read `doc(GhApi)` before constructing a client. Configure the intended account and repository, then inspect the actual instance. Authentication can use environment credentials; do not print tokens or request authorization headers.
 
-    api = GhApi(owner='fastai', repo='ghapi')
-    await api.issues.list_for_repo(state='open')   # owner/repo already bound
-
-These are only defaults: any endpoint or convenience method accepts `owner=`/`repo=` to override per call (e.g. `await api.check_status('v1.0', repo='other')`), so one client can serve a whole org; convenience methods propagate the override to everything they call internally.
-
-# Discovering the API
-
-Displaying `api` lists every available group with a docs link. Endpoint names follow `<verb>_<noun>`, e.g. `issues.list_for_repo`, `issues.create`, `pulls.merge`. Groups can contain hundreds of endpoints, so search their names with `pyskills.xdir()` instead of rendering the whole group, then inspect the matching endpoint:
-
-    import pyskills
-    pyskills.xdir(api.actions, 'log')
+    api = GhApi(owner='AnswerDotAI', repo='ghapi')
+    doc(api)
+    xdir(api.actions, 'log')
     doc(api.actions.download_job_logs_for_workflow_run)
 
-The optional `pyskills.xdir` query is a case-insensitive regex. `doc()` works at every level of a live instance, but `doc(api.actions)` renders that group's complete endpoint list; use it only when the group is small enough to read. The instance must be live because the API is generated at construction time: inspecting the `GhApi` *class* shows only convenience methods, not generated groups. `api['/path/{owner}/{repo}', 'GET']` looks up an endpoint directly by path and verb.
+A root display lists groups. A group display lists operations and subgroups. Search large groups with `xdir` rather than rendering hundreds of entries. Read the selected operation's full docs, including parameter descriptions and defaults, before calling it. Class inspection cannot show generated operations. Do not substitute `type(operation).__call__` for the operation object.
 
-# Reading an issue or PR (including comments and reviews)
+Convenience methods are listed by `doc(GhApi)`; inspect their bound forms, such as `doc(api.read_issue)`. Their docs explain distinctions the endpoint summary cannot: general versus inline review comments, legacy status versus check-run verdicts, and the structure of returned results.
 
-`await api.read_issue(number)` is the single call for this -- it fetches title, body, and general comments, and for PRs also the unified diff, inline review comments, and review summaries (approved/changes-requested/commented), returning an `AttrDict` whose repr is a readable summary (title, body, diff size, comment counts). Display it bare instead of printing fields; the full diff stays in `.diff`:
+Use an async client unless the task requires blocking calls. Generated sync endpoints and async convenience methods have different calling requirements; read the constructor and selected callable rather than assuming one mode applies to everything.
 
-    info = await api.read_issue(205)
-    print(info)
-    print(info.diff) # if needed
-    # See info.title, info.body, info.comments, info.review_comments, info.reviews for details
+# Workflows
 
-When you want the whole thing as one LLM-ready markdown string rather than structured data, use the module-level `await read_pr(num_or_url, owner, repo, replies=True)` -- it accepts a pasted GitHub URL directly, reduces the diff to just headers and changed lines, and appends formatted comments/review comments/reviews.
+For an issue or PR review, prefer the combined reading helpers over assembling many endpoint calls. Choose structured results or a formatted review according to what the next step needs. Display tuned result objects bare. Inspect their documented fields when the summary is insufficient.
 
-# CI / check status
+For a whole repository's file contents as model context, inspect `toolslm.xml.repo2ctx` rather than walking the contents API file by file. Use repository metadata endpoints when file contents are not needed.
 
-`await api.check_status(ref)` merges the two ways CI results get reported -- the modern Checks API (`checks.list_for_ref`, what GitHub Actions uses) and the legacy Commit Status API (`repos.get_combined_status_for_ref`, used by some external CI) -- into one call, given a SHA/branch/tag. `api.pr_status(pull_number)` is the same, resolved from a PR's head commit.
+For CI triage, inspect the full status report before selecting failed jobs. A passing check beside a failing one is relevant evidence. Read failed-step logs while they remain available. Across repositories, independent reads can run concurrently; investigate shared upstream failures before treating every downstream failure as independent.
 
-The result's repr is the triage step: a verdict line (computed from the check runs -- the raw `state` field only reflects legacy statuses, so it reads `pending` on repos that only use Actions), then the run list as concise one-line rows, `id  name: conclusion (duration)`, plus any legacy statuses. Display it bare; drop to the `.check_runs`/`.statuses` fields only when the rows aren't enough.
+The REST API bypasses issue forms. Read the repository's templates before filing an issue, then use the form-building helper. General comments on a PR belong to the Issues API; inline code-review comments are a separate workflow.
 
-The recommended process for working through a set of possibly-red repos:
+Treat list endpoints as paginated. Use the pagination helpers rather than assuming the first response contains everything. Read their docs for iteration and concurrency. Rate limits and response metadata are exposed by the client.
 
-    api = GhApi(owner='AnswerDotAI')
-    sts = dict(zip(repos, await asyncio.gather(*(api.check_status('main', repo=r) for r in repos))))
+GraphQL discovery is also object-based. Inspect the client, a query fragment, or a schema type. Read a fragment before binding its arguments and selecting fields. Use batching for independent queries and paging for long connections. In this skill's sandbox policy, mutations and subscriptions are blocked.
 
-One `gather` gives every repo's verdict at once. For each red repo, display its full status -- every run, not just the failures, since a failed run beside a similar green one is itself diagnostic -- then feed the failing row's id to `await api.failed_step_log(id, repo=r)`: a check run and its Actions job share an id, so the row leads straight to its log, returned cut down to just the failed steps' sections. Job logs expire after about 90 days, so grab them while the run is fresh.
+# Local changes and external writes
 
-# Day-to-day work
+Use local Git for checkout state, diffs, branches, and commits. Inspect `Git` and the actual bound command before use. Check returned output for errors; lack of a raised exception is not proof of success.
 
-Issues/PRs: `issues.create`, `issues.update` (title/body/state/labels/assignees), `issues.create_comment`, `issues.add_labels`, `pulls.create`, `pulls.merge`, `pulls.create_review`. List endpoints paginate at 30/page by default (100 max per page) -- for anything that might exceed one page, use `paged(api.issues.list_for_repo, ...)` (an async generator, one page per iteration: `async for`) or `await pages(api.issues.list_for_repo, n_pages, ...)` (fetches multiple pages in parallel; get `n_pages` from `api.last_page()` if not already known).
+Keep unrelated work intact. For an external contribution, isolate the task's changes on a suitable branch or worktree and confirm the fork and upstream destinations before publishing. Never discard uncommitted work as automatic cleanup.
 
-Many repos require issues to follow their issue-form template, and the API bypasses templates entirely, so maintainers will bounce a hand-composed body. Before `issues.create` on a repo you don't maintain, fetch the templates with `await api.issue_template()` (parsed yml forms, with the owner-level `.github` repo as fallback), then build the body with `issue_body(tmpl, {label: content})`: it emits the same `### <label>` sections GitHub's web form would, and raises on missing required sections.
-
-# Repo overview
-
-`api.repos.get()`, `list_languages()`, `get_readme()`, `list_branches()`/`list_tags()`, `compare_commits()`, `list_contributors()`. For dumping a repo's actual file contents as LLM-ready context (not just metadata), `await toolslm.xml.repo2ctx(owner, repo)` downloads a tarball and renders it as XML without cloning -- reach for that instead of manually walking `get_repo_files`/`get_repo_contents` when the goal is "show me this repo's contents."
-
-# GraphQL
-
-Use `GhGql` for reads that fan out or that REST can't reach (nested org/repo queries, ProjectsV2). `gql = GhGql()`; query fields are attributes (`xdir(gql, 'repo')` to list); chain to build a query, with kwargs for args (`await gql.repo('AnswerDotAI/fastws').ref(qualifiedName='refs/heads/main').target.oid` -- `repo()` takes an `'owner/name'` spec); displaying an unfinished fragment shows its signature, docs, and next fields; `await gql.batch(frag for ... )` runs many fragments as one call (auto-chunked into parallel requests), results in input order (`None` per missing repo). Long lists are Relay connections capped at 100 per request: `async for o in gql.paged(frag, 'field1 field2')` walks the cursors to the end. Call any node with raw GraphQL text for branchy selections (`.object(expression='HEAD:pyproject.toml')('... on Blob { text }')`); `gql.t.TypeName` looks up enums/types; `await gql(query_text, **variables)` runs raw queries. Mutations are blocked.
-
-# Gists
-
-`await api.create_gist(description, content, img_paths=...)` (uploads images and rewrites markdown links to their raw URLs) and `api.update_gist(id, content)` (replaces the first file's content) are async-only. `api.load_gist(id_or_url)` (accepts a bare id or `user/id`) and `api.gist_file(id)` (first file's contents) follow the client's mode: awaitable on an async client, direct results on `GhApi(sync=True)`.
-
-# Local git (fastgit)
-
-For anything that's about the local repo/working tree rather than GitHub itself -- current branch, staged diff, a local commit, log -- `Git` (from `fastgit`, but exported by `ghapi.skill`) wraps the `git` CLI directly. Its `d` takes any path-like and expands `~` itself, so pass paths bare -- `Git('~/git/repo')`:
-
-    g = Git('.')
-    g.status()
-    g.log('-1', pretty='format:%s')            # kwargs become flags
-    g.add('foo.py'); g.commit(m='fix foo')
-    g.log('--oneline', __=['some/path'])       # `__` passes positional path args after `--`
-
-`Git.__call__` prints (not raises) on a `CalledProcessError` unless you pass `mute_errors=True` -- check the return value, don't assume no exception means success.
-
-# External PRs
-
-For a PR to another owner's repo, use normal local Git through the commit, ensure your fork exists, then use one client scoped to the fork. `commit_tree` uploads GitHub tree entries as one commit without Git transport authentication; override `owner` only when creating the upstream PR:
-
-    api = GhApi('me', repo)
-    await api.commit_tree(branch, message, entries)
-    await api.pulls.create(owner='upstream', head=f'me:{branch}', base='main', title=title, body=body)
-
-Once the PR exists, the fork branch is the source of truth, and the local clone is residue: reset it (`git restore .` and switch back to the main branch) rather than leaving the edits behind, where a later session will find an unexplained diff. In particular, never build a second PR's edits on a tree still dirty from the first: each PR gets its own branch from main with a clean tree, since layered uncommitted edits ship a merged diff to `commit_tree` and block `git switch` once shared files diverge.
-
-# Gotchas
-
-- Results with tuned reprs (`read_issue`, `check_status`, `list_prs`, `gh_notifs`) display bare. Raw endpoint results don't, so when only confirmation matters (a `create_comment`, a `pulls.update`), assign the result to a variable and show one key (`r.html_url`, `r.state`) instead of displaying the whole payload.
-- A PR *is* an issue for general comments (`issues.list_comments`, not `pulls.*`) -- inline code-review comments are the separate `pulls.list_review_comments`.
-- Rate limits: register `limit_cb` on `GhApi(...)` to get called back whenever the remaining quota changes, or check `api.limit_rem` any time.
-- HTTP errors raise `fasttransport.errors.APIError`, which carries `.status_code` and the endpoint called.
-- `per_page` maxes out at 100; beyond that, use `paged`/`pages` rather than manually looping `page=`.
-- Per-call headers on named endpoints use `headers_=` (e.g. `await api.pulls.get(n, headers_={'Accept': 'application/vnd.github.v3.diff'})` for the raw diff); plain `headers=` is a kwarg only for direct `api(path, verb, ...)` calls.
-- `GITHUB_TOKEN` unset means unauthenticated (heavily rate-limited, no write access) -- `GhApi()` warns but doesn't raise.
+Reading documentation does not authorize writes. The skill's sandbox policies allow a restricted set of Git commands and read-only generated GitHub operations. They do not grant unrestricted API access. Confirm the requested scope before posting, changing permissions, deleting resources, or publishing code.
 """
 
 from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh, issue_body

@@ -17,7 +17,7 @@ __all__ = ['GQL_URL', 'GhGql', 'GqlError']
 
 # %% ../nbs/05_graphql.ipynb #f18b651e
 from fastcore.utils import *
-from fastspec.gql import GqlSpec, GqlClient, GqlError  # chkstyle: ignore
+from fastspec.gql import GqlSpec, GqlClient, GqlError
 
 # %% ../nbs/05_graphql.ipynb #b44eb8a0
 _all_ = ['GqlError']
