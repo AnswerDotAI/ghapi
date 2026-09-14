@@ -1,12 +1,20 @@
-"""Query GitHub's GraphQL API: schema-aware chained queries, one-request batching, and raw GraphQL
+"""Query GitHub's GraphQL API with schema-aware chaining, batched requests and raw GraphQL
 
-GitHub's REST API returns each resource's fixed shape, so a read that fans out -- "the head commit of these 100 repos" -- is 100 round trips, most of whose bytes you discard. The GraphQL API is one endpoint that accepts a *shape*: describe the nesting you want and the server returns exactly that, in one round trip. `GhGql` is [fastspec's GraphQL client](https://answerdotai.github.io/fastspec/gql.html) bound to GitHub: the schema ships pre-distilled with this package, so discovery (`xdir`, attribute completion, rich reprs), schema-checked query chaining with plain-kwargs arguments, and parallel chunked batching all work with no setup beyond a `GITHUB_TOKEN`. Raw GraphQL text works at every level, and only query fields are exposed as attributes -- mutations require deliberately writing raw text.
+GitHub's GraphQL API lets you request specific fields from several resources in one query. For example, you can fetch the head commits of many repositories without a separate REST request for each repository.
 
-`GhGql` is a thin binding: fastspec's `GqlClient` pointed at GitHub's endpoint, authenticated from `GITHUB_TOKEN` (or an explicit `token=`), with the shipped schema loaded. Fragments, `batch`, `gql.t`, raw calls, and `GqlError` with partial data are all inherited.
+`GhGql` uses [fastspec's GraphQL client](https://answerdotai.github.io/fastspec/gql.html) with GitHub's schema. Set `GITHUB_TOKEN` to get started. Explore fields with `xdir`, attribute completion and rich displays. Build query fragments by chaining attributes and passing keyword arguments. The client checks field names against the bundled schema.
 
-Because a query is a shape, "run these N fragments" is just one bigger shape: `batch` (from `GqlClient`) takes fragments -- or one generator of them -- and returns results in input order. `repo` builds the fragment for an `'owner/name'` spec. Checking which of a hundred repos moved is one `batch` call. GitHub resolves a query's aliases serially (a 103-alias query measured 5.5s), so `GhGql` sets `batch_chunk = 25`: large batches go as parallel chunked requests transparently (the same 103 repos: 1.7s):
+You can also use raw GraphQL for complete queries or selections within a field. Attributes expose query fields. Mutations require raw GraphQL text.
 
-Not everything sits on a path you are building: enum values, input-object shapes, and union membership are looked up rather than navigated to. `gql.t` indexes every schema type by name.
+`GhGql` configures `GqlClient` with GitHub's endpoint and the bundled schema. Authentication uses `GITHUB_TOKEN` or an explicit `token=`. It inherits fragments, `batch`, `gql.t` and raw queries. `GqlError` retains the server's errors and any partial data.
+
+`batch` accepts query fragments as separate arguments or one iterable. Results keep the input order. `repo` builds a repository fragment from an `'owner/name'` string.
+
+`GhGql` sends batches of up to 25 fragments concurrently. GitHub resolves aliases within each query serially. In a measurement with 103 repositories, one query took 5.5 seconds and chunked requests took 1.7 seconds.
+
+Fetch the repositories' head commits in one `batch` call:
+
+Use `gql.t` to look up schema types by name. It shows enum values, input-object fields and union members:
 
 Docs: https://ghapi.fast.ai/graphql.html.md"""
 
