@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 2.1.4
+
+### New Features
+
+- Add `generate_release_notes` parameter to `create_release` to let GitHub auto-generate notes from merged pull requests ([#239](https://github.com/AnswerDotAI/ghapi/issues/239))
+- Rewrite skill docs for object-based discovery, add per-param GhApi docs, UTC-aware date2gh, branch-aware file sha lookups ([#238](https://github.com/AnswerDotAI/ghapi/issues/238))
+
+
 ## 2.1.3
 
 ### New Features
