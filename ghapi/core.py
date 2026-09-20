@@ -260,11 +260,11 @@ async def upload_file(self:GhApi, rel, fn):
 
 @gh_patch
 async def create_release(self:GhApi, tag_name, branch=None, name=None, body='',
-    draft=False, prerelease=False, files=None, make_latest=UNSET):
+    draft=False, prerelease=False, files=None, make_latest=UNSET, generate_release_notes=UNSET):
     "Wrapper for `GhApi.repos.create_release` which also uploads `files`; `branch` defaults to the repo's default branch"
     if name is None: name = 'v'+tag_name
     rel = await self.repos.create_release(tag_name, target_commitish=branch or UNSET, name=name, body=body,
-        draft=draft, prerelease=prerelease, make_latest=make_latest)
+        draft=draft, prerelease=prerelease, make_latest=make_latest, generate_release_notes=generate_release_notes)
     for file in listify(files): await self.upload_file(rel, file)
     return rel
 
