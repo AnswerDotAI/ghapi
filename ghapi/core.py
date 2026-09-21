@@ -420,9 +420,10 @@ async def enable_pages(self:GhApi, branch=None, path="/"):
     r = await self.repos.get()
     branch = branch or r.default_branch
     source = {"branch": branch, "path": path}
-    if r.has_pages: return # await self.repos.update_information_about_pages_site(source=source)
     if len(await self.list_branches(branch))==0: await self.create_branch_empty(branch)
-    return await self.repos.create_pages_site(source=source)
+    if not r.has_pages: return await self.repos.create_pages_site(source=source)
+    await self.repos.update_information_about_pages_site(source=source)
+    return await self.repos.get_pages()
 
 # %% ../nbs/00_core.ipynb #519ec71c
 class _IssueInfo(AttrDict):
