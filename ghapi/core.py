@@ -647,6 +647,14 @@ async def pr_status(self:GhApi, pull_number:int):
     "Combined status and check-run results for a PR's head commit"
     return await self.check_status((await self.pulls.get(pull_number)).head.sha)
 
+# %% ../nbs/00_core.ipynb #40f5c88a
+def _step_lines(zf, job, s):
+    "Timestamped log lines for step `s` of `job`. They come from the step's own archive file, or else from the job's combined log, cut to the step's time window."
+    names = zf.namelist()
+    if name := first(n for n in names if n.startswith(f'{job.name}/{s.number}_')): return zf.read(name).decode().splitlines()
+    name = first(n for n in names if re.fullmatch(rf'\d+_{re.escape(job.name)}\.txt', n))
+    return [l for l in zf.read(name).decode('utf-8-sig').splitlines() if s.started_at[:19] <= l[:19] <= s.completed_at[:19]]
+
 # %% ../nbs/00_core.ipynb #569864f5
 @gh_patch
 async def failed_step_log(self:GhApi, job_id:int):
@@ -659,8 +667,7 @@ async def failed_step_log(self:GhApi, job_id:int):
     res = []
     for s in job.steps:
         if s.conclusion!='failure': continue
-        name = first(n for n in zf.namelist() if n.startswith(f'{job.name}/{s.number}_'))
-        lines = [strip_ansi(l.split(' ', 1)[-1]) for l in zf.read(name).decode().splitlines()]
+        lines = [strip_ansi(l.split(' ', 1)[-1]) for l in _step_lines(zf, job, s)]
         res.append(f'# {s.name}\n' + '\n'.join(lines))
     return TruncatedString('\n\n'.join(res), 8_000)
 
