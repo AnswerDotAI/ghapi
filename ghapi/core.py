@@ -655,12 +655,29 @@ def _step_lines(zf, job, s):
     name = first(n for n in names if re.fullmatch(rf'\d+_{re.escape(job.name)}\.txt', n))
     return [l for l in zf.read(name).decode('utf-8-sig').splitlines() if s.started_at[:19] <= l[:19] <= s.completed_at[:19]]
 
+# %% ../nbs/00_core.ipynb #fd5e2942
+def _fold_groups(lines, n=20):
+    "Fold each finished `##[group]` of more than `n` lines, unless it holds an error or warning. An unfinished group stays whole, since the step died inside it."
+    res, start = [], None
+    for l in lines:
+        res.append(l)
+        if l.startswith('##[group]'): start = len(res)
+        elif l.startswith('##[endgroup]') and start is not None:
+            body = res[start:-1]
+            if len(body) > n and not any(o.startswith(('##[error]', '##[warning]')) for o in body): res[start:-1] = [f'… {len(body)} lines folded']
+            start = None
+    return res
+
 # %% ../nbs/00_core.ipynb #569864f5
 @gh_patch
-async def failed_step_log(self:GhApi, job_id:int):
+async def failed_step_log(
+    self:GhApi,
+    job_id:int, # Workflow job id, which is also its check run id
+    fold:bool=True, # Fold long finished `##[group]` blocks that hold no error or warning?
+):
     """Return the failed steps' log sections, each headed by its step name.
 
-    An Actions check run's id is its job id. Pass that id from `check_status` or `pr_status`. The returned text's display is truncated at 8,000 characters. GitHub can expire or delete stored logs.
+    An Actions check run's id is its job id. Pass that id from `check_status` or `pr_status`. The returned text's display is truncated at 8,000 characters. Long finished `##[group]` blocks with no error or warning are folded to a line count. GitHub can expire or delete stored logs.
     """
     job = await self.actions.get_job_for_workflow_run(job_id=job_id)
     zf = zipfile.ZipFile(io.BytesIO(await self.actions.download_workflow_run_logs(run_id=job.run_id)))
@@ -668,6 +685,7 @@ async def failed_step_log(self:GhApi, job_id:int):
     for s in job.steps:
         if s.conclusion!='failure': continue
         lines = [strip_ansi(l.split(' ', 1)[-1]) for l in _step_lines(zf, job, s)]
+        if fold: lines = _fold_groups(lines)
         res.append(f'# {s.name}\n' + '\n'.join(lines))
     return TruncatedString('\n\n'.join(res), 8_000)
 
