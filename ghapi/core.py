@@ -649,11 +649,13 @@ async def pr_status(self:GhApi, pull_number:int):
 
 # %% ../nbs/00_core.ipynb #40f5c88a
 def _step_lines(zf, job, s):
-    "Timestamped log lines for step `s` of `job`. They come from the step's own archive file, or else from the job's combined log, cut to the step's time window."
+    "Timestamped log lines for step `s` of `job`. They come from the step's own archive file, or else from the job's combined log, cut to the step's time window and its last `##[error]` line."
     names = zf.namelist()
     if name := first(n for n in names if n.startswith(f'{job.name}/{s.number}_')): return zf.read(name).decode().splitlines()
     name = first(n for n in names if re.fullmatch(rf'\d+_{re.escape(job.name)}\.txt', n))
-    return [l for l in zf.read(name).decode('utf-8-sig').splitlines() if s.started_at[:19] <= l[:19] <= s.completed_at[:19]]
+    lines = [l for l in zf.read(name).decode('utf-8-sig').splitlines() if s.started_at[:19] <= l[:19] <= s.completed_at[:19]]
+    last = max((i for i,l in enumerate(lines) if l.split(' ', 1)[-1].startswith('##[error]')), default=len(lines)-1)
+    return lines[:last+1]
 
 # %% ../nbs/00_core.ipynb #fd5e2942
 def _fold_groups(lines, n=20):
