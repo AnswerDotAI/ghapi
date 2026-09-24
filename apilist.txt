@@ -1,0 +1,429 @@
+# ghapi Module Documentation
+
+## ghapi.actions
+
+> Functionality for helping to create GitHub Actions workflows in Python
+> 
+> Docs: https://ghapi.fast.ai/actions.html.md
+
+- `def user_repo()`
+    List of `user,repo` from `env_github.repository
+
+- `def create_workflow_files(fname, workflow, build_script, prebuild)`
+    Create workflow and script files in suitable places in `github` folder
+
+- `def fill_workflow_templates(name, event, run, context, script, opersys, prebuild)`
+    Function to create a simple Ubuntu workflow that calls a Python `ghapi` script
+
+- `def env_contexts(contexts)`
+    Create a suitable `env:` line for a workflow to make a context available in the environment
+
+- `def create_workflow(name, event, contexts, opersys, prebuild)`
+    Function to create a simple Ubuntu workflow that calls a Python `ghapi` script
+
+- `@call_parse def gh_create_workflow(name, event, contexts)`
+    Supports `gh-create-workflow`, a CLI wrapper for `create_workflow`.
+
+- `def example_payload(event)`
+    Get an example of a JSON payload for `event`
+
+- `def github_token()`
+    Get GitHub token from `GITHUB_TOKEN` env var if available, or from `github` context
+
+- `def actions_output(name, value)`
+    Print the special GitHub Actions `::set-output` line for `name::value`
+
+- `def actions_debug(message)`
+    Print the special `::debug` line for `message`
+
+- `def actions_warn(message, details)`
+    Print the special `::warning` line for `message`
+
+- `def actions_error(message, details)`
+    Print the special `::error` line for `message`
+
+- `@contextmanager def actions_group(title)`
+    Context manager to print the special `::group`/`::endgroup` lines for `title`
+
+- `def actions_mask(value)`
+    Print the special `::add-mask` line for `value`
+
+- `def set_git_user(api)`
+    Set git user name/email to authenticated user (if `api`) or GitHub Actions bot (otherwise)
+
+## ghapi.auth
+
+> Helpers for creating GitHub API tokens
+> 
+> Docs: https://ghapi.fast.ai/auth.html.md
+
+- `def scope_str(*scopes)`
+    Convert `scopes` into a comma-separated string
+
+- `class GhDeviceAuth`
+    Get an oauth token using the GitHub API device flow
+
+    - `def __init__(self, client_id, *scopes)`
+
+- `@patch def url_docs(self)`
+    Default instructions on how to authenticate
+
+- `@patch def open_browser(self)`
+    Open a web browser with the verification URL
+
+- `@patch def auth(self)`
+    Return token if authentication complete, or `None` otherwise
+
+- `@patch def wait(self, cb, n_polls)`
+    Wait up to `n_polls` times for authentication to complete, calling `cb` after each poll, if passed
+
+- `def github_auth_device(wb, n_polls)`
+    Authenticate with GitHub, polling up to `n_polls` times to wait for completion
+
+## ghapi.build_lib
+
+> Docs: https://ghapi.fast.ai/build_lib.html.md
+
+- `def build_spec(nm, url)`
+    Regenerate the compact spec module `gh_spec.py` from GitHub's OpenAPI description.
+
+- `def build_gql_spec(nm, url)`
+    Regenerate the distilled GraphQL schema tables shipped as `ghapi.gql_spec`.
+
+## ghapi.cli
+
+> Access to the GitHub API from the command line
+> 
+> Docs: https://ghapi.fast.ai/cli.html.md
+
+- `def ghapi()`
+    Python backend for the `ghapi` command, which calls an endpoint by operation name
+
+- `def ghpath()`
+    Python backend for the `ghpath` command, which calls an endpoint by path
+
+- `def ghraw()`
+    Python backend for the `ghraw` command, which calls a fully-specified endpoint
+
+- `def completion_ghapi()`
+    Python backend for `completion-ghapi` command
+
+## ghapi.core
+
+> Detailed information on the GhApi API
+> 
+> Docs: https://ghapi.fast.ai/core.html.md
+
+- `def print_summary(method, url, kwargs)`
+    Debug callback for `GhApi(debug=...)`: print each request with the token (if any) removed
+
+- `class GhTransport`
+    Async transport converting JSON responses to `AttrDict`s and tracking rate-limit and response headers.
+
+    - `def __init__(self, debug, limit_cb, **kwargs)`
+    - `def request(self, method, url, **kwargs)`
+
+- `class GhSyncTransport`
+    Sync twin of `GhTransport`: same debug, header, and rate-limit handling over a blocking `SyncTransport`
+
+    - `def request(self, method, url, **kwargs)`
+
+- `def gh_patch(fn)`
+    `patch` `fn` into `GhApi`, adding `owner`/`repo` params that override the client defaults for this call and its internal calls
+
+- `class GhApi`
+    GitHub API client. Endpoint groups (`issues`, `pulls`, ...) are generated per-instance from GitHub's OpenAPI metadata, so the class shows only convenience methods -- inspect a live instance, e.g. `doc(GhApi())`, to see the full API.
+
+    - `def __init__(self, owner, repo, token, jwt_token, debug, limit_cb, gh_host, authenticate, timeout, sync, **kwargs)`
+        Construct the generated API locally; no request is made until an operation is called
+
+    - `@property def debug`
+    - `@property def limit_rem`
+    - `@property def recv_hdrs`
+
+- `@patch def __call__(self, path, verb, headers, route, query, data)`
+    Call a fully specified `path` (or full URL) using HTTP `verb` directly (returns an awaitable on an async client)
+
+- `@patch def __getitem__(self, k)`
+    Lookup an endpoint by path and verb (which defaults to 'GET')
+
+- `def call_gh(op, *args, **kwargs)`
+    Call one GitHub operation `op` (e.g. `'repos.get'`) on a fresh sync client; handy for one-off calls from sync code
+
+- `def date2gh(dt)`
+    Convert `dt` to GitHub's UTC timestamp format; naive datetimes are assumed UTC
+
+- `def gh2date(dtstr)`
+    Convert a GitHub UTC date string to a naive UTC `datetime`
+
+- `class GhRows`
+    Result rows whose bare display is one actionable line each
+
+    - `def __repr__(self)`
+
+- `@patch def create_gist(self, description, content, filename, public, img_paths)`
+    Create a gist, optionally with images where each md img url will be placed with img upload urls.
+
+- `@patch def load_gist(self, gist_id)`
+    Retrieve a gist by id, or by `user/id` (as it appears in gist URLs); coro if async client
+
+- `@patch def gist_file(self, gist_id)`
+    Get the first file from a gist; coro if async client
+
+- `@patch def update_gist(self, gist_id, content)`
+    Update the first file in a gist with new content
+
+- `@patch def upload_file(self, rel, fn)`
+    Upload `fn` to endpoint for release `rel`
+
+- `@gh_patch def create_release(self, tag_name, branch, name, body, draft, prerelease, files, make_latest, generate_release_notes)`
+    Wrapper for `GhApi.repos.create_release` which also uploads `files`; `branch` defaults to the repo's default branch
+
+- `@gh_patch def delete_release(self, release)`
+    Delete a release and its associated tag
+
+- `@gh_patch def list_tags(self, prefix)`
+    List all tags, optionally filtered to those starting with `prefix`
+
+- `@gh_patch def list_branches(self, prefix)`
+    List all branches, optionally filtered to those starting with `prefix`
+
+- `@gh_patch def delete_tag(self, tag)`
+    Delete a tag
+
+- `@gh_patch def delete_branch(self, branch)`
+    Delete a branch
+
+- `@gh_patch def commit_tree(self, branch, message, tree, base)`
+    Commit `tree` entries to `branch`, creating it from `base` when needed
+
+- `@patch def get_repo_files(self, owner, repo, branch, inc, exc)`
+    Get all file items of a repo, optionally filtered.
+
+- `@gh_patch def enable_pages(self, branch, path)`
+    Enable or update pages for a repo to point to a `branch` and `path`.
+
+- `@gh_patch def read_issue(self, issue_number)`
+    Fetch an issue or PR as structured data with a compact display.
+
+    Fields include `title`, `body`, `is_pr`, and general `comments`. PRs also have the full `diff`, inline `review_comments`, and `reviews`. Display the result bare for the summary; inspect those fields for detail. General PR comments use the Issues API, not the Pulls review API.
+
+- `def read_pr(pr_number, owner, repo, folder, replies)`
+    Fetch a GitHub PR or issue as one markdown string: title, body, diff (if any), and optionally replies
+
+- `def pr_file_diff(pr_number, filename, owner, repo)`
+    Get the untruncated patch/diff for a single file in a PR
+
+- `class PullRow`
+    One pull request as an actionable line
+
+    - `def line(self, maxlen)`
+
+- `class PullRows`
+    Pull request rows, displayed with titles truncated to `maxlen`
+
+    - `def __init__(self, items, maxlen)`
+    - `def __repr__(self)`
+
+- `@gh_patch def list_prs(self, state, maxlen, per_page, page)`
+    Pull requests as one-line rows, most recently updated first
+
+- `@gh_patch def issue_template(self)`
+    Parsed issue templates for the repo (or the owner's `.github` repo as fallback); pass one to `issue_body`
+
+- `def issue_body(tmpl, sections)`
+    Build an issue body following form `tmpl` from `issue_template`: `### <label>` headings in template order. `sections` maps label to content (for checkbox sections: list of checked options, or `True` for all)
+
+- `class CheckRun`
+    - `def __repr__(self)`
+
+- `class CommitStatus`
+    - `def __repr__(self)`
+
+- `@gh_patch def check_status(self, ref)`
+    Combined commit status and check-run results for `ref` (a SHA, branch, or tag).
+
+    Display the result bare for the check-run verdict and all run/status rows. `.state` comes only from legacy commit statuses and can be pending even when every Actions check passed. `.check_runs` and `.statuses` retain the structured rows.
+
+- `@gh_patch def pr_status(self, pull_number)`
+    Combined status and check-run results for a PR's head commit
+
+- `@gh_patch def failed_step_log(self, job_id, fold)`
+    Return the failed steps' log sections, each headed by its step name.
+
+    An Actions check run's id is its job id. Pass that id from `check_status` or `pr_status`. The returned text's display is truncated at 8,000 characters. Long finished `##[group]` blocks with no error or warning are folded to a line count. GitHub can expire or delete stored logs.
+
+- `def dep_key(dep)`
+    Package key for PEP 508 dependency spec `dep`
+
+- `def local_dep_graph(root)`
+    Dependency graph `{package: (repo dir, [dep packages])}` for checkouts under `root`
+
+- `def dep_closure(name, graph)`
+    Repo names for `name` and its transitive dependencies within `graph`
+
+- `def dep_order(graph, names)`
+    Order `names` (repo, package, or `owner/name` specs; default all of `graph`) dependency-first, ties most-depended-on first
+
+- `def dep_dependents(graph, names)`
+    For each of `names` (default all of `graph`), the listed names that transitively depend on it, most-depended-on first
+
+- `@gh_patch def dep_graph(self, *repos)`
+    Dependency graph for `repos` and their transitive same-owner deps, fetched from GitHub pyprojects; seed with `graph` to skip fetching known members
+
+## ghapi.event
+
+> Helpers for getting GitHub API events
+> 
+> Docs: https://ghapi.fast.ai/event.html.md
+
+- `@patch @delegates(_list_events) def list_events(self, per_page, page, **kwargs)`
+    Fetch public events for repo network, org, user, or all
+
+- `@patch @delegates(_list_events) def list_events_parallel(self, per_page, n_pages, **kwargs)`
+    Fetch as many events from `list_events` in parallel as available
+
+- `class GhEvent`
+    Class for events returned from `fetch_events
+
+
+- `@patch @delegates(_list_events) def fetch_events(self, n_pages, pause, per_page, types, incl_bot, **kwargs)`
+    Generate an infinite stream of events, optionally filtered to `types, with `pause` seconds between requests
+
+- `def load_sample_events()`
+    Load sample events, downloading if needed
+
+- `def save_sample_events(n)`
+    Save the most recent `n` events as compressed JSON
+
+- `@patch(as_prop=True) def full_type(self)`
+    Concatenation of `type` and `payload.action` (if available)
+
+- `@patch(as_prop=True) def description(self)`
+    Description of event
+
+- `@patch(as_prop=True) def emoji(self)`
+    Emoji for event from `evt_emojis`
+
+- `@patch(as_prop=True) def text(self)`
+    Text (e.g. body or title) of event, if exists
+
+## ghapi.graphql
+
+> Query GitHub's GraphQL API with schema-aware chaining, batched requests and raw GraphQL
+> 
+> GitHub's GraphQL API lets you request specific fields from several resources in one query. For example, you can fetch the head commits of many repositories without a separate REST request for each repository.
+> 
+> `GhGql` uses [fastspec's GraphQL client](https://answerdotai.github.io/fastspec/gql.html) with GitHub's schema. Set `GITHUB_TOKEN` to get started. Explore fields with `xdir`, attribute completion and rich displays. Build query fragments by chaining attributes and passing keyword arguments. The client checks field names against the bundled schema.
+> 
+> You can also use raw GraphQL for complete queries or selections within a field. Attributes expose query fields. Mutations require raw GraphQL text.
+> 
+> `GhGql` configures `GqlClient` with GitHub's endpoint and the bundled schema. Authentication uses `GITHUB_TOKEN` or an explicit `token=`. It inherits fragments, `batch`, `gql.t` and raw queries. `GqlError` retains the server's errors and any partial data.
+> 
+> `batch` accepts query fragments as separate arguments or one iterable. Results keep the input order. `repo` builds a repository fragment from an `'owner/name'` string.
+> 
+> `GhGql` sends batches of up to 25 fragments concurrently. GitHub resolves aliases within each query serially. In a measurement with 103 repositories, one query took 5.5 seconds and chunked requests took 1.7 seconds.
+> 
+> Fetch the repositories' head commits in one `batch` call:
+> 
+> Use `gql.t` to look up schema types by name. It shows enum values, input-object fields and union members:
+> 
+> Docs: https://ghapi.fast.ai/graphql.html.md
+
+- `class GhGql`
+    GitHub GraphQL client using the shipped distilled schema
+
+    - `def __init__(self, token)`
+    - `def repo(self, spec)`
+        Repository fragment for an `'owner/name'` spec
+
+
+## ghapi.page
+
+> Parallel and serial pagination
+> 
+> Docs: https://ghapi.fast.ai/page.html.md
+
+- `def paged(oper, *args, **kwargs)`
+    Convert operation `oper(*args,**kwargs)` into an async iterator, requesting pages serially until one comes back empty
+
+- `def parse_link_hdr(header)`
+    Parse an RFC 5988 link header, returning a `dict` from rels to a `tuple` of URL and attrs `dict`
+
+- `@patch def last_page(self)`
+    Parse RFC 5988 link header from most recent operation, and extract the last page
+
+- `def pages(oper, n_pages, *args, **kwargs)`
+    Get `n_pages` pages from `oper(*args,**kwargs)`, in parallel
+
+- `def sync_paged(oper, *args, **kwargs)`
+    `paged` for a `sync=True` client: request pages serially until one comes back empty
+
+- `def sync_pages(oper, n_pages, *args, **kwargs)`
+    Get `n_pages` pages from `oper(*args,**kwargs)` on a `sync=True` client, in parallel via threads
+
+- `class NotifRow`
+    One notification thread as an actionable line
+
+    - `def __repr__(self)`
+
+- `class NotifRows`
+    Notification rows; displays 'no notifications' when empty
+
+    - `def __repr__(self)`
+
+- `def gh_notifs(days, reasons, include_read, per_page)`
+    Notifications from the past `days` (all available if None) as `NotifRows`, marked `[closed]`/`[merged]` when the subject is no longer open; `reasons=None` includes every reason
+
+- `@patch def mark_done(self, *ids)`
+    Mark notification threads as done, removing them from the inbox (the API cannot list done threads back)
+
+## ghapi.skill
+
+> GitHub REST and GraphQL access, plus local git operations. Read before working with GitHub issues, PRs, CI, releases, branches, or gists, and before repo-local git operations.
+> 
+> `GhApi`: GitHub REST, endpoints generated from bundled OpenAPI metadata. `GhGql`: GraphQL, for nested reads that would take many REST calls. `Git` (fastgit): local checkout. Creating/inspecting clients sends no requests. Credentials come from the env; never print tokens or auth headers. Prefer async clients; `sync=True` makes generated endpoints blocking, but convenience methods (`api.read_issue`, `read_pr`, `gh_notifs`, ...) stay async, so check each callable's doc.
+> 
+> # Finding the right call
+> 
+> Read `doc(GhApi)`, create a client for the target owner/repo, then inspect the instance (class inspection can't show generated ops):
+> 
+>     api = GhApi(owner='AnswerDotAI', repo='ghapi')
+>     doc(api)
+>     xdir(api.actions, 'log')
+>     doc(api.actions.download_job_logs_for_workflow_run)
+> 
+> `doc(api)` lists groups; a group lists ops and subgroups; search big groups with `xdir`. Read an op's own `doc()` (params, defaults) before calling; call the op object, never `type(op).__call__`. `doc(GhApi)` also lists convenience methods combining several endpoints; read their bound forms (`doc(api.read_issue)`), which explain what endpoint summaries can't (general vs inline review comments; legacy statuses vs check runs).
+> 
+> # Workflows
+> 
+> - Issue/PR review: `api.read_issue` (structured fields), `read_pr` (one markdown string), `pr_file_diff` (one file's full diff). Display results bare; inspect fields when the summary isn't enough.
+> - Whole repo as model context: `toolslm.xml.repo2ctx`, not the contents API file by file; metadata endpoints when contents aren't needed.
+> - CI triage: read the whole `api.check_status`/`api.pr_status` report before picking failed jobs (a passing check beside a failing one is evidence), then `api.failed_step_log` per failed job before logs expire. Cross-repo reads can run concurrently; rule out a shared upstream failure before treating downstream failures as independent.
+> - Filing an issue: REST bypasses issue forms; read the form with `api.issue_template`, build the body with `issue_body`. Whole-PR comments go via the Issues API; inline review comments are a separate workflow.
+> - `gh_notifs`: recent notifications. `call_gh`: one-off call from sync code.
+> - List endpoints are paginated: `paged` iterates serially, `pages` fetches in parallel. `api.limit_rem`/`api.recv_hdrs`: rate limit, response headers.
+> 
+> # GraphQL
+> 
+> Discover via objects: the client, a fragment (`gql.repo('owner/name')`), or a schema type; read a fragment's doc before binding args and selecting fields. `gql.batch`: independent queries; `gql.paged`: long connections. Sandbox policy blocks mutations/subscriptions.
+> 
+> # Local changes and writes
+> 
+> `Git`: checkout state, diffs, branches, commits. Inspect it and the bound command before running; it returns errors as output rather than raising by default, so check each result. Keep unrelated work intact: external contributions go on their own branch/worktree, with fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup.
+> 
+> Reading docs doesn't authorise writes. Sandbox policies allow a restricted git command set and read-only (GET/HEAD) GitHub ops. Confirm scope before posting, changing permissions, deleting, or publishing.
+
+- `class ReadOnlyGhPolicy`
+    - `def __call__(self, obj, args, kwargs, data)`
+
+- `class GitPolicy`
+    Allow only safecmd-default git subcommands
+
+    - `def __call__(self, obj, args, kwargs, data)`
+
+- `class GqlPolicy`
+    GraphQL query guard -- blocks mutations and subscriptions
+
+    - `def __call__(self, obj, args, kwargs, data)`
+

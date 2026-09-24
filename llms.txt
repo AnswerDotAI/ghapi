@@ -1,0 +1,30 @@
+# ghapi
+> A complete Python interface to GitHub's REST API that is always 100% up to date.
+
+`ghapi` provides 100% always-updated coverage of the entire GitHub API. This is done dynamically by converting the OpenAPI spec to a Pythonic API. Using `ghapi`, you can automate nearly anything that you can do through the GitHub web interface or through the `git` client, such as:
+
+- Open, list, comment on, or modify issues or pull requests
+- Create, list, or modify git tags or GitHub releases, including uploading release assets
+- Configure and run GitHub Actions and webhooks
+- Set up GitHub users and organizations
+- Manage your deployments
+- …and much, much more.
+
+There is a one-to-one mapping between the GitHub REST API and the `ghapi` API, which you can find in the FullAPI Reference.
+
+## Tutorials
+
+- [Blog Post](https://github.blog/developer-skills/programming-languages-and-frameworks/learn-about-ghapi-a-new-third-party-python-client-for-the-github-api/)
+- [GitHub Actions](https://ghapi.fast.ai/actions.html.md): Functionality for helping to create GitHub Actions workflows in Python
+- [GitHub API Tokens](https://ghapi.fast.ai/auth.html.md): Helpers for creating GitHub API tokens
+- [Pagination](https://ghapi.fast.ai/page.html.md): Helpers for paginating through GitHub API results
+- [Events](https://ghapi.fast.ai/event.html.md): Helpers for working with GitHub Events
+
+## Examples
+
+- [Home Page](https://ghapi.fast.ai/index.html.md): A list of examples of how to use `ghapi`.
+
+## Optional
+
+- [FullAPI Reference](https://ghapi.fast.ai/fullapi.html.md): A detailed reference of all methods in `ghapi`, with links to the corresponding GitHub API documentation.
+- [Additional API Reference](https://ghapi.fast.ai/apilist.txt): A list of methods in `ghapi` that do not correspond to any GitHub REST API paths, but are useful for automating GitHub.
