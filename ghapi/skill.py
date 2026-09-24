@@ -1,43 +1,36 @@
 """GitHub REST and GraphQL access, plus local git operations. Read before working with GitHub issues, PRs, CI, releases, branches, or gists, and before repo-local git operations.
 
-Use `GhApi` for GitHub resources and `Git` for the local checkout. The REST surface comes from the bundled GitHub OpenAPI metadata. Use `GhGql` for nested reads or queries that would otherwise require many REST requests. Creating clients and inspecting their generated objects does not send requests.
+`GhApi`: GitHub REST, endpoints generated from bundled OpenAPI metadata. `GhGql`: GraphQL, for nested reads that would take many REST calls. `Git` (fastgit): local checkout. Creating/inspecting clients sends no requests. Credentials come from the env; never print tokens or auth headers. Prefer async clients; `sync=True` makes generated endpoints blocking, but convenience methods (`api.read_issue`, `read_pr`, `gh_notifs`, ...) stay async, so check each callable's doc.
 
-# Discover before calling
+# Finding the right call
 
-Read `doc(GhApi)` before constructing a client. Configure the intended account and repository, then inspect the actual instance. Authentication can use environment credentials; do not print tokens or request authorization headers.
+Read `doc(GhApi)`, create a client for the target owner/repo, then inspect the instance (class inspection can't show generated ops):
 
     api = GhApi(owner='AnswerDotAI', repo='ghapi')
     doc(api)
     xdir(api.actions, 'log')
     doc(api.actions.download_job_logs_for_workflow_run)
 
-A root display lists groups. A group display lists operations and subgroups. Search large groups with `xdir` rather than rendering hundreds of entries. Read the selected operation's full docs, including parameter descriptions and defaults, before calling it. Class inspection cannot show generated operations. Do not substitute `type(operation).__call__` for the operation object.
-
-Convenience methods are listed by `doc(GhApi)`; inspect their bound forms, such as `doc(api.read_issue)`. Their docs explain distinctions the endpoint summary cannot: general versus inline review comments, legacy status versus check-run verdicts, and the structure of returned results.
-
-Use an async client unless the task requires blocking calls. Generated sync endpoints and async convenience methods have different calling requirements; read the constructor and selected callable rather than assuming one mode applies to everything.
+`doc(api)` lists groups; a group lists ops and subgroups; search big groups with `xdir`. Read an op's own `doc()` (params, defaults) before calling; call the op object, never `type(op).__call__`. `doc(GhApi)` also lists convenience methods combining several endpoints; read their bound forms (`doc(api.read_issue)`), which explain what endpoint summaries can't (general vs inline review comments; legacy statuses vs check runs).
 
 # Workflows
 
-For an issue or PR review, prefer the combined reading helpers over assembling many endpoint calls. Choose structured results or a formatted review according to what the next step needs. Display tuned result objects bare. Inspect their documented fields when the summary is insufficient.
+- Issue/PR review: `api.read_issue` (structured fields), `read_pr` (one markdown string), `pr_file_diff` (one file's full diff). Display results bare; inspect fields when the summary isn't enough.
+- Whole repo as model context: `toolslm.xml.repo2ctx`, not the contents API file by file; metadata endpoints when contents aren't needed.
+- CI triage: read the whole `api.check_status`/`api.pr_status` report before picking failed jobs (a passing check beside a failing one is evidence), then `api.failed_step_log` per failed job before logs expire. Cross-repo reads can run concurrently; rule out a shared upstream failure before treating downstream failures as independent.
+- Filing an issue: REST bypasses issue forms; read the form with `api.issue_template`, build the body with `issue_body`. Whole-PR comments go via the Issues API; inline review comments are a separate workflow.
+- `gh_notifs`: recent notifications. `call_gh`: one-off call from sync code.
+- List endpoints are paginated: `paged` iterates serially, `pages` fetches in parallel. `api.limit_rem`/`api.recv_hdrs`: rate limit, response headers.
 
-For a whole repository's file contents as model context, inspect `toolslm.xml.repo2ctx` rather than walking the contents API file by file. Use repository metadata endpoints when file contents are not needed.
+# GraphQL
 
-For CI triage, inspect the full status report before selecting failed jobs. A passing check beside a failing one is relevant evidence. Read failed-step logs while they remain available. Across repositories, independent reads can run concurrently; investigate shared upstream failures before treating every downstream failure as independent.
+Discover via objects: the client, a fragment (`gql.repo('owner/name')`), or a schema type; read a fragment's doc before binding args and selecting fields. `gql.batch`: independent queries; `gql.paged`: long connections. Sandbox policy blocks mutations/subscriptions.
 
-The REST API bypasses issue forms. Read the repository's templates before filing an issue, then use the form-building helper. General comments on a PR belong to the Issues API; inline code-review comments are a separate workflow.
+# Local changes and writes
 
-Treat list endpoints as paginated. Use the pagination helpers rather than assuming the first response contains everything. Read their docs for iteration and concurrency. Rate limits and response metadata are exposed by the client.
+`Git`: checkout state, diffs, branches, commits. Inspect it and the bound command before running; it returns errors as output rather than raising by default, so check each result. Keep unrelated work intact: external contributions go on their own branch/worktree, with fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup.
 
-GraphQL discovery is also object-based. Inspect the client, a query fragment, or a schema type. Read a fragment before binding its arguments and selecting fields. Use batching for independent queries and paging for long connections. In this skill's sandbox policy, mutations and subscriptions are blocked.
-
-# Local changes and external writes
-
-Use local Git for checkout state, diffs, branches, and commits. Inspect `Git` and the actual bound command before use. Check returned output for errors; lack of a raised exception is not proof of success.
-
-Keep unrelated work intact. For an external contribution, isolate the task's changes on a suitable branch or worktree and confirm the fork and upstream destinations before publishing. Never discard uncommitted work as automatic cleanup.
-
-Reading documentation does not authorize writes. The skill's sandbox policies allow a restricted set of Git commands and read-only generated GitHub operations. They do not grant unrestricted API access. Confirm the requested scope before posting, changing permissions, deleting resources, or publishing code.
+Reading docs doesn't authorise writes. Sandbox policies allow a restricted git command set and read-only (GET/HEAD) GitHub ops. Confirm scope before posting, changing permissions, deleting, or publishing.
 """
 
 from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh, issue_body
@@ -75,6 +68,8 @@ class GqlPolicy(AllowPolicy):
         if 'mutation' in q.lower() or 'subscription' in q.lower():
             raise PermissionError('Only GraphQL queries are allowed; mutations and subscriptions are blocked')
 
-allow({Git: [('__call__', GitPolicy())], OpFunc: [('__call__', ReadOnlyGhPolicy())], GhGql: [('__call__', GqlPolicy())]}, paged, pages, read_pr, pr_file_diff, gh_notifs)
+allow({Git: [('__call__', GitPolicy())], OpFunc: [('__call__', ReadOnlyGhPolicy())], GhGql: [('__call__', GqlPolicy())],
+       GhApi: ['read_issue', 'check_status', 'pr_status', 'failed_step_log', 'issue_template']},
+      paged, pages, read_pr, pr_file_diff, gh_notifs, issue_body)
 
 __all__ = ['Git', 'GhApi', 'GhGql', 'call_gh', 'paged', 'pages', 'read_pr', 'pr_file_diff', 'gh_notifs', 'issue_body']
