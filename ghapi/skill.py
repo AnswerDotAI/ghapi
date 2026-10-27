@@ -28,7 +28,7 @@ Discover via objects: the client, a fragment (`gql.repo('owner/name')`), or a sc
 
 # Local changes and writes
 
-`Git`: checkout state, diffs, branches, commits. Inspect it and the bound command before running; it returns errors as output rather than raising by default, so check each result. Keep unrelated work intact: external contributions go on their own branch/worktree, with fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup.
+`Git`: checkout state, diffs, branches, commits. Call each git subcommand as a method, with `_` for `-`: `git.cherry_pick(sha)` runs `git cherry-pick sha`. Keyword arguments become flags, and `__` passes paths after `--`: `git.diff(stat=True, __='src')` runs `git diff --stat -- src`. Inspect it and the bound command before running; it returns errors as output rather than raising by default, so check each result. Keep unrelated work intact: external contributions go on their own branch/worktree, with fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup.
 
 Reading docs doesn't authorise writes. Sandbox policies allow a restricted git command set and read-only (GET/HEAD) GitHub ops. Confirm scope before posting, changing permissions, deleting, or publishing.
 """

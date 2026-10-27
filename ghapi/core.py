@@ -232,9 +232,7 @@ async def create_gist(self:GhApi, description, content, filename='gist.txt', pub
 @patch
 def load_gist(self:GhApi, gist_id:str):
     "Retrieve a gist by id, or by `user/id` (as it appears in gist URLs); coro if async client"
-    if '/' in gist_id: *_,user,gist_id = gist_id.split('/')
-    else: user = None
-    return self.gists.get(gist_id, user=user)
+    return self.gists.get(gist_id.split('/')[-1])
 
 @patch
 def gist_file(self:GhApi, gist_id:str):
