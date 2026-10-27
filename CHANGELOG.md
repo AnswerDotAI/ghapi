@@ -2,6 +2,19 @@
 
 <!-- do not remove -->
 
+## 2.1.5
+
+### New Features
+
+- Trim combined-log step lines at the last ## line so trailing cleanup output is excluded from failed step logs ([#242](https://github.com/AnswerDotAI/ghapi/issues/242))
+- Fold long ## blocks without errors or warnings in `failed_step_log` output, with a new fold parameter to disable it ([#241](https://github.com/AnswerDotAI/ghapi/issues/241))
+- Fall back to the jobs ([#240](https://github.com/AnswerDotAI/ghapi/issues/240))
+
+### Bugs Squashed
+
+- Fix `load_gist` to pass only the gist id to gists.get ([#243](https://github.com/AnswerDotAI/ghapi/issues/243))
+
+
 ## 2.1.4
 
 ### New Features
