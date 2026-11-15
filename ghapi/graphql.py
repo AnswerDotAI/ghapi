@@ -36,7 +36,9 @@ GQL_URL = 'https://api.github.com/graphql'
 class GhGql(GqlClient):
     "GitHub GraphQL client using the shipped distilled schema"
     batch_chunk = 25  # GitHub resolves aliases serially, so large batches go as parallel chunked requests
-    def __init__(self, token=None):
+    def __init__(self,
+        token=None, # Personal access token; otherwise GITHUB_TOKEN
+    ):
         from ghapi.gql_spec import gqlspec
         super().__init__(GqlSpec.from_dict(gqlspec), GQL_URL,
             headers={'Authorization': f'bearer {token or os.environ["GITHUB_TOKEN"]}'})

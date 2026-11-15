@@ -1,36 +1,42 @@
+# NB: this file is designed for an LLM reader, not a human. Add it to your LLM's context and ask it to explain.
 """GitHub REST and GraphQL access, plus local git operations. Read before working with GitHub issues, PRs, CI, releases, branches, or gists, and before repo-local git operations.
 
-`GhApi`: GitHub REST, endpoints generated from bundled OpenAPI metadata. `GhGql`: GraphQL, for nested reads that would take many REST calls. `Git` (fastgit): local checkout. Creating/inspecting clients sends no requests. Credentials come from the env; never print tokens or auth headers. Prefer async clients; `sync=True` makes generated endpoints blocking, but convenience methods (`api.read_issue`, `read_pr`, `gh_notifs`, ...) stay async, so check each callable's doc.
+- GraphQL (`GhGql`) over REST (`GhApi`): nested reads that would take many REST calls
+- credentials from env; never print tokens, auth headers
+- prefer async clients    /under `sync=True`, convenience methods stay async
 
 # Finding the right call
 
-Read `doc(GhApi)`, create a client for the target owner/repo, then inspect the instance (class inspection can't show generated ops):
-
-    api = GhApi(owner='AnswerDotAI', repo='ghapi')
-    doc(api)
-    xdir(api.actions, 'log')
-    doc(api.actions.download_job_logs_for_workflow_run)
-
-`doc(api)` lists groups; a group lists ops and subgroups; search big groups with `xdir`. Read an op's own `doc()` (params, defaults) before calling; call the op object, never `type(op).__call__`. `doc(GhApi)` also lists convenience methods combining several endpoints; read their bound forms (`doc(api.read_issue)`), which explain what endpoint summaries can't (general vs inline review comments; legacy statuses vs check runs).
+- `doc(GhApi)`: convenience methods; bound docs (`doc(api.read_issue)`) cover what endpoint summaries can't: general vs inline review comments, legacy statuses vs check runs
+- endpoints: call the op object, never `type(op).__call__`
 
 # Workflows
 
-- Issue/PR review: `api.read_issue` (structured fields), `read_pr` (one markdown string), `pr_file_diff` (one file's full diff). Display results bare; inspect fields when the summary isn't enough.
-- Whole repo as model context: `toolslm.xml.repo2ctx`, not the contents API file by file; metadata endpoints when contents aren't needed.
-- CI triage: read the whole `api.check_status`/`api.pr_status` report before picking failed jobs (a passing check beside a failing one is evidence), then `api.failed_step_log` per failed job before logs expire. Cross-repo reads can run concurrently; rule out a shared upstream failure before treating downstream failures as independent.
-- Filing an issue: REST bypasses issue forms; read the form with `api.issue_template`, build the body with `issue_body`. Whole-PR comments go via the Issues API; inline review comments are a separate workflow.
-- `gh_notifs`: recent notifications. `call_gh`: one-off call from sync code.
-- List endpoints are paginated: `paged` iterates serially, `pages` fetches in parallel. `api.limit_rem`/`api.recv_hdrs`: rate limit, response headers.
+- review: `api.read_issue`, `read_pr`, `pr_file_diff`
+- repo as model context: `toolslm.xml.repo2ctx`, not per-file contents; metadata endpoints when contents aren't needed
+- CI: whole `api.check_status` or `api.pr_status` report before picking failed jobs    /passing check beside failing one is evidence
+- failed job: `api.failed_step_log`, before logs expire
+- across repos: reads can run concurrently; rule out shared upstream failure before treating failures as independent
+- new issue: `api.issue_template`    /REST bypasses issue forms
+- comments: whole PR: Issues API; inline review: Pulls API (`xdir(api.pulls, 'review_comment')`)
+- `api.limit_rem`: rate limit; `api.recv_hdrs`: response headers
 
 # GraphQL
 
-Discover via objects: the client, a fragment (`gql.repo('owner/name')`), or a schema type; read a fragment's doc before binding args and selecting fields. `gql.batch`: independent queries; `gql.paged`: long connections. Sandbox policy blocks mutations/subscriptions.
+- discover from client, fragment (`gql.repo('owner/name')`) or schema type; fragment's doc before args, fields
+- `gql.batch`: independent queries; `gql.paged`: long connections
 
-# Local changes and writes
+# Local git
 
-`Git`: checkout state, diffs, branches, commits. Call each git subcommand as a method, with `_` for `-`: `git.cherry_pick(sha)` runs `git cherry-pick sha`. Keyword arguments become flags, and `__` passes paths after `--`: `git.diff(stat=True, __='src')` runs `git diff --stat -- src`. If an external diff tool shortens or changes the output, bypass it with `git.diff(no_ext_diff=True, __=path)`. Inspect `Git` and the bound command before running; it returns errors as output rather than raising by default, so check each result. Keep unrelated work intact: external contributions go on their own branch/worktree, with fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup.
+- `Git` (fastgit): subcommand = method, `_` for `-` (`git.cherry_pick(sha)`); keyword = flag; `__`: paths after `--` (`git.diff(stat=True, __='src')` → `git diff --stat -- src`)
+- external diff tool shortens or changes output: `no_ext_diff=True`
+- errors return as output by default: check each result
+- keep unrelated work; external contributions: own branch or worktree, fork vs upstream confirmed before publishing; never discard uncommitted work as cleanup
 
-Reading docs doesn't authorise writes. Sandbox policies allow a restricted git command set and read-only (GET/HEAD) GitHub ops. Confirm scope before posting, changing permissions, deleting, or publishing.
+# Writes
+
+- docs don't authorise them; confirm scope before posting, permission changes, deleting, publishing
+- sandbox: git restricted; GitHub REST GET, HEAD only; GraphQL: no mutations, subscriptions
 """
 
 from ghapi.all import GhApi, paged, pages, read_pr, pr_file_diff, gh_notifs, call_gh, issue_body
