@@ -1,5 +1,5 @@
 # NB: this file is designed for an LLM reader, not a human. Add it to your LLM's context and ask it to explain.
-"""GitHub REST and GraphQL access, plus local git operations. Read before working with GitHub issues, PRs, CI, releases, branches, or gists, and before repo-local git operations.
+"""GitHub REST (`GhApi`) and GraphQL (`GhGql`), plus local git via `fastgit` (`Git`). Read before working with GitHub issues, PRs, CI, releases, branches, or gists, or any repo-local git operations.
 
 - GraphQL (`GhGql`) over REST (`GhApi`): nested reads that would take many REST calls
 - credentials from env; never print tokens, auth headers
